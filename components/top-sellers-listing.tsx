@@ -3,13 +3,14 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, CircleAlert, Eye, MapPin, Send, X } from "lucide-react";
+import { BadgeCheck, CircleAlert, Eye, Mail, MapPin, Phone, Send, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { routePath } from "@/url";
+import spreadsheetSellers from "@/data/sourcing-agents.json";
 
 type SellerProfile = {
   id: string;
@@ -20,6 +21,10 @@ type SellerProfile = {
   city: string;
   country: string;
   website?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  countries?: string[];
   verified: boolean;
   about?: string;
   services?: string[];
@@ -29,38 +34,21 @@ type SellerProfile = {
 
 type SellerResponse = { success: boolean; data?: SellerProfile[] };
 
+const sourcingDirectory = spreadsheetSellers as SellerProfile[];
+
 const apiBaseUrl = String(
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1",
 ).replace(/\/+$/, "");
 
-const sellerFallbacks: SellerProfile[] = [
-  { id: "curated-jingsourcing", name: "Marketplace team", companyName: "JingSourcing", title: "Product sourcing, development and shipping", location: "Yiwu, Zhejiang, China", city: "Yiwu", country: "China", website: "https://jingsourcing.com", verified: false, about: "Support for supplier sourcing, product development, quality checks, and order coordination.", services: ["Supplier sourcing", "Quality control", "Shipping"], turnaroundTime: "By project" },
-  { id: "curated-guangzhou", name: "Marketplace team", companyName: "Guangzhou Sourcing", title: "Procurement and supply-chain support in China", location: "Guangzhou, Guangdong, China", city: "Guangzhou", country: "China", website: "https://guangzhousourcing.com", verified: false, about: "Procurement support for buyers working with manufacturers and suppliers in China.", services: ["Procurement", "Supplier management"], turnaroundTime: "By project" },
-  { id: "curated-matchsourcing", name: "Marketplace team", companyName: "MatchSourcing", title: "China sourcing and import support", location: "Guangzhou, Guangdong, China", city: "Guangzhou", country: "China", website: "https://matchsourcing.com", verified: false, about: "Sourcing and import coordination for businesses buying products from China.", services: ["Product sourcing", "Import support"], turnaroundTime: "By project" },
-  { id: "curated-imex", name: "Marketplace team", companyName: "IMEX Sourcing", title: "China sourcing and supply-chain management", location: "Guangzhou, China", city: "Guangzhou", country: "China", website: "https://imexsourcingservices.com", verified: false, about: "Supplier sourcing, quality control, product development, and supply-chain coordination.", services: ["Sourcing", "Quality control"], turnaroundTime: "By project" },
-  { id: "curated-asiaction", name: "Marketplace team", companyName: "Asiaction", title: "Sourcing, quality and purchasing services", location: "China", city: "", country: "China", website: "https://asiaction.com", verified: false, about: "China-based support for sourcing, purchasing, inspection, and supplier coordination.", services: ["Purchasing", "Inspection"], turnaroundTime: "By project" },
-  { id: "curated-dragon", name: "Marketplace team", companyName: "Dragon Sourcing", title: "Strategic sourcing and procurement services", location: "Shanghai, China", city: "Shanghai", country: "China", website: "https://dragonsourcing.com", verified: false, about: "Strategic sourcing support for companies building and managing international supply networks.", services: ["Strategic sourcing", "Procurement"], turnaroundTime: "By project" },
-  { id: "curated-keen", name: "Marketplace team", companyName: "Keen Sourcing", title: "China supplier sourcing and order management", location: "Shanghai, China", city: "Shanghai", country: "China", website: "https://www.keensourcing.com", verified: false, about: "Product sourcing and supplier-management support for overseas buyers.", services: ["Supplier sourcing", "Order management"], turnaroundTime: "By project" },
-  { id: "curated-cpa", name: "Marketplace team", companyName: "China Purchasing Agent", title: "Purchasing and supplier coordination in China", location: "Shenzhen, Guangdong, China", city: "Shenzhen", country: "China", website: "https://chinapurchasingagent.com", verified: false, about: "Local support for purchasing, supplier communication, and China order coordination.", services: ["Purchasing", "Supplier coordination"], turnaroundTime: "By project" },
-  { id: "curated-owl", name: "Marketplace team", companyName: "OwlSourcing", title: "China product sourcing and quality support", location: "Shanghai, China", city: "Shanghai", country: "China", website: "https://owlsourcing.com", verified: false, about: "Sourcing assistance for product research, supplier contact, and quality follow-up.", services: ["Product sourcing", "Quality support"], turnaroundTime: "By project" },
-  { id: "curated-justchina", name: "Marketplace team", companyName: "JustChinait", title: "China sourcing and order fulfilment", location: "Shenzhen, Guangdong, China", city: "Shenzhen", country: "China", website: "https://justchinait.com", verified: false, about: "Sourcing and fulfilment support for buyers ordering and shipping products from China.", services: ["Sourcing", "Fulfilment"], turnaroundTime: "By project" },
-  { id: "curated-easyimex", name: "Marketplace team", companyName: "Easy Imex", title: "End-to-end China sourcing and quality management", location: "Shanghai, China", city: "Shanghai", country: "China", website: "https://easyimex.com", verified: false, about: "Supplier sourcing, negotiation, quality management, purchasing, and shipping support.", services: ["Sourcing", "Quality management", "Shipping"], turnaroundTime: "By project" },
-  { id: "curated-guidedimports", name: "Marketplace team", companyName: "Guided Imports", title: "China sourcing and supplier management", location: "China", city: "", country: "China", website: "https://guidedimports.com", verified: false, about: "Resources and services for sourcing, supplier checks, and importing products from China.", services: ["Supplier sourcing", "Supplier verification"], turnaroundTime: "By project" },
-];
-
-function fillSellerGrid(dashboardSellers: SellerProfile[], countryName: string) {
-  const eligibleDashboardSellers = dashboardSellers.filter((seller) => {
-    const website = String(seller.website || "").trim().toLowerCase();
-    return website && !website.includes(".example");
-  });
-  const names = new Set(eligibleDashboardSellers.map((seller) => seller.companyName.trim().toLowerCase()));
-  const countryFallbacks = sellerFallbacks.filter(
-    (seller) => seller.country.toLowerCase() === countryName.trim().toLowerCase(),
-  );
-  return [
-    ...eligibleDashboardSellers,
-    ...countryFallbacks.filter((seller) => !names.has(seller.companyName.toLowerCase())),
-  ].slice(0, 12);
+function spreadsheetSellersFor(countryName: string) {
+  const country = countryName.trim().toLowerCase();
+  if (country === "all") return sourcingDirectory;
+  if (country === "china" || country === "india") {
+    return sourcingDirectory.filter((seller) =>
+      (seller.countries || [seller.country]).some((value) => value.toLowerCase() === country),
+    );
+  }
+  return null;
 }
 
 function countryFlag(countryName: string) {
@@ -72,9 +60,46 @@ function countryFlag(countryName: string) {
     "south africa": "south-africa",
     "united arab emirates": "uae",
     uae: "uae",
+    "united states": "united-states",
+    "united kingdom": "uk",
+    uk: "uk",
+    canada: "canada",
+    australia: "australia",
+    germany: "germany",
+    "new zealand": "new-zealand",
+    bangladesh: "bangladesh",
+    brazil: "brazil",
+    nigeria: "nigeria",
+    pakistan: "pakistan",
   };
   const flag = countryFlags[countryName.trim().toLowerCase()];
   return flag ? `/flags/${flag}.svg` : null;
+}
+
+function countryFlagEmoji(countryName: string) {
+  const flags: Record<string, string> = {
+    "hong kong": "🇭🇰",
+    "united states": "🇺🇸",
+    "united kingdom": "🇬🇧",
+    uk: "🇬🇧",
+    canada: "🇨🇦",
+    australia: "🇦🇺",
+    ireland: "🇮🇪",
+    singapore: "🇸🇬",
+    germany: "🇩🇪",
+    sweden: "🇸🇪",
+    france: "🇫🇷",
+    thailand: "🇹🇭",
+    mexico: "🇲🇽",
+    "south africa": "🇿🇦",
+    italy: "🇮🇹",
+    taiwan: "🇹🇼",
+    vietnam: "🇻🇳",
+    china: "🇨🇳",
+    india: "🇮🇳",
+    uae: "🇦🇪",
+  };
+  return flags[countryName.trim().toLowerCase()] || "🏳️";
 }
 
 function websiteUrl(value?: string) {
@@ -87,14 +112,28 @@ function websiteUrl(value?: string) {
   }
 }
 
-function SellerCard({ seller, onEnquire }: { seller: SellerProfile; onEnquire: (seller: SellerProfile) => void }) {
+function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; onEnquire: (seller: SellerProfile) => void; onSelect: (seller: SellerProfile) => void }) {
   const website = websiteUrl(seller.website);
   const tags = seller.services || [];
   const initials = (seller.companyName || seller.name || "S").slice(0, 1).toUpperCase();
-  const flag = countryFlag(seller.country);
+  const countries = seller.countries?.length ? seller.countries : [seller.country];
 
   return (
-    <Card className="group relative h-full overflow-hidden border-border/70 bg-card shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-950/5 dark:hover:border-blue-800">
+    <Card
+      role="button"
+      tabIndex={0}
+      aria-haspopup="dialog"
+      aria-label={`View details for ${seller.companyName}`}
+      onClick={() => onSelect(seller)}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(seller);
+        }
+      }}
+      className="group relative h-full cursor-pointer overflow-hidden border-border/70 bg-card shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-950/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:border-blue-800"
+    >
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500" />
       <CardContent className="flex h-full flex-col p-5 pt-6">
         <div className="flex items-start justify-between gap-3">
@@ -105,6 +144,15 @@ function SellerCard({ seller, onEnquire }: { seller: SellerProfile; onEnquire: (
               <p className="truncate text-xs text-muted-foreground">{seller.name || "Company representative"}</p>
             </div>
           </div>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1" aria-label={`Sourcing country${countries.length > 1 ? "ies" : ""}: ${countries.join(", ")}`}>
+            {countries.map((country) => {
+              const flag = countryFlag(country);
+              return flag
+                ? <Image key={country} src={flag} alt={`${country} flag`} title={country} width={20} height={14} className="h-3.5 w-5 rounded-[2px] border border-black/10 object-cover" />
+                : <span key={country} role="img" aria-label={`${country} flag`} title={country} className="text-base leading-none">{countryFlagEmoji(country)}</span>;
+            })}
+          </div>
           {seller.verified ? (
             <Badge className="shrink-0 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
               <BadgeCheck className="size-3.5" aria-hidden="true" /> Verified
@@ -114,26 +162,34 @@ function SellerCard({ seller, onEnquire }: { seller: SellerProfile; onEnquire: (
               <CircleAlert className="size-3.5" aria-hidden="true" /> Listed
             </Badge>
           )}
+          </div>
         </div>
 
         <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          {flag ? <Image src={flag} alt="" width={20} height={14} className="h-3.5 w-5 rounded-[2px] border border-black/10 object-cover" aria-hidden="true" /> : null}
-          <span>{seller.country || "China"}</span>
+          <span>{countries.join(" / ") || "China"}</span>
           {seller.city ? <><span aria-hidden="true">•</span><span className="truncate">{seller.city}</span></> : null}
         </div>
 
         <div className="mt-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">Service</p>
-          <h4 className="mt-1 line-clamp-2 min-h-12 text-lg font-bold leading-snug">{seller.title || "China sourcing and logistics support"}</h4>
-          <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">
+          {seller.title ? <h4 className="line-clamp-2 min-h-12 text-lg font-bold leading-snug">{seller.title}</h4> : null}
+          <p className={`${seller.title ? "mt-2" : ""} line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground`}>
             {seller.about || "Review this seller’s services, location, and experience before sending an enquiry."}
           </p>
         </div>
 
-        <div className="mt-4 flex min-h-6 flex-wrap gap-1.5">
-          {tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="max-w-36 truncate font-medium">{tag}</Badge>)}
-          {tags.length > 2 ? <Badge variant="outline">+{tags.length - 2}</Badge> : null}
-        </div>
+        {tags.length ? (
+          <div className="mt-4 flex min-h-6 flex-wrap gap-1.5">
+            {tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary" className="max-w-36 truncate font-medium">{tag}</Badge>)}
+            {tags.length > 2 ? <Badge variant="outline">+{tags.length - 2}</Badge> : null}
+          </div>
+        ) : null}
+
+        {(seller.email || seller.phone) ? (
+          <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+            {seller.email ? <a onClick={(event) => event.stopPropagation()} className="flex min-w-0 items-center gap-2 hover:text-foreground" href={`mailto:${seller.email}`} title={seller.email}><Mail className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{seller.email}</span></a> : null}
+            {seller.phone ? <a onClick={(event) => event.stopPropagation()} className="flex min-w-0 items-center gap-2 hover:text-foreground" href={`tel:${seller.phone.replace(/[^+\d]/g, "")}`} title={seller.phone}><Phone className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{seller.phone}</span></a> : null}
+          </div>
+        ) : null}
 
         <div className="mt-4 flex items-center gap-2 border-t pt-4 text-xs text-muted-foreground">
           <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
@@ -144,15 +200,86 @@ function SellerCard({ seller, onEnquire }: { seller: SellerProfile; onEnquire: (
         <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
           {website ? (
             <Button asChild variant="outline">
-              <a href={website} target="_blank" rel="noreferrer"><Eye className="size-4" aria-hidden="true" /> Details</a>
+              <a onClick={(event) => event.stopPropagation()} href={website} target="_blank" rel="noreferrer"><Eye className="size-4" aria-hidden="true" /> Details</a>
             </Button>
           ) : (
             <Button variant="outline" disabled title="Website not added by this seller"><Eye className="size-4" aria-hidden="true" /> Details</Button>
           )}
-          <Button onClick={() => onEnquire(seller)}><Send className="size-4" aria-hidden="true" /> Enquire</Button>
+          <Button onClick={(event) => { event.stopPropagation(); onEnquire(seller); }}><Send className="size-4" aria-hidden="true" /> Enquire</Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SellerDetailsDialog({
+  seller,
+  onClose,
+  onEnquire,
+}: {
+  seller: SellerProfile | null;
+  onClose: () => void;
+  onEnquire: (seller: SellerProfile) => void;
+}) {
+  const website = websiteUrl(seller?.website);
+  const countries = seller?.countries?.length ? seller.countries : seller ? [seller.country] : [];
+
+  return (
+    <Dialog open={seller !== null} onOpenChange={(open) => !open && onClose()}>
+      {seller ? (
+        <DialogContent
+          overlayClassName="bg-slate-950/35 backdrop-blur-sm"
+          className="max-h-[88vh] overflow-y-auto rounded-2xl p-6 shadow-2xl duration-300 data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:slide-out-to-bottom-2 sm:max-w-3xl lg:max-w-4xl sm:p-8"
+        >
+          <DialogHeader className="pr-8">
+            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-muted-foreground">
+              {countries.map((country) => {
+                const flag = countryFlag(country);
+                return flag
+                  ? <Image key={country} src={flag} alt={`${country} flag`} width={20} height={14} className="h-3.5 w-5 rounded-[2px] border border-black/10 object-cover" />
+                  : <span key={country} role="img" aria-label={`${country} flag`}>{countryFlagEmoji(country)}</span>;
+              })}
+              <span>{countries.join(" / ") || "Location unavailable"}</span>
+              {seller.verified ? <Badge variant="secondary"><BadgeCheck className="mr-1 size-3.5" />Verified</Badge> : <Badge variant="outline"><CircleAlert className="mr-1 size-3.5" />Listed</Badge>}
+            </div>
+            <DialogTitle className="pt-2 text-2xl sm:text-3xl">{seller.companyName}</DialogTitle>
+            <p className="text-base text-muted-foreground">{seller.title || seller.name || "Sourcing company profile"}</p>
+          </DialogHeader>
+
+          <div className="grid gap-6 pt-2 md:grid-cols-[1.25fr_0.75fr]">
+            <section className="space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Company overview</h3>
+                <p className="mt-2 whitespace-normal text-sm leading-6">{seller.about || "Contact this company to learn more about its sourcing services and operating locations."}</p>
+              </div>
+              {seller.services?.length ? (
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Services</h3>
+                  <div className="mt-2 flex flex-wrap gap-2">{seller.services.map((service) => <Badge key={service} variant="secondary">{service}</Badge>)}</div>
+                </div>
+              ) : null}
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Address</h3>
+                <p className="mt-2 text-sm leading-6">{seller.address || seller.location || "Address not provided"}</p>
+              </div>
+            </section>
+
+            <aside className="h-fit rounded-xl border bg-muted/30 p-4 sm:p-5">
+              <h3 className="font-semibold">Contact information</h3>
+              <div className="mt-4 space-y-4 text-sm">
+                {seller.email ? <div className="flex min-w-0 items-start gap-3"><Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><a className="break-all hover:underline" href={`mailto:${seller.email}`}>{seller.email}</a></div> : null}
+                {seller.phone ? <div className="flex items-start gap-3"><Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><a className="hover:underline" href={`tel:${seller.phone.replace(/[^+\d]/g, "")}`}>{seller.phone}</a></div> : null}
+                {website ? <div className="flex items-start gap-3"><Eye className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><a className="break-all hover:underline" href={website} target="_blank" rel="noreferrer">{seller.website}</a></div> : null}
+              </div>
+              <div className="mt-6 grid gap-2 sm:grid-cols-2 md:grid-cols-1">
+                {website ? <Button asChild variant="outline"><a href={website} target="_blank" rel="noreferrer"><Eye className="size-4" />Visit website</a></Button> : null}
+                <Button onClick={() => onEnquire(seller)}><Send className="size-4" />Enquire</Button>
+              </div>
+            </aside>
+          </div>
+        </DialogContent>
+      ) : null}
+    </Dialog>
   );
 }
 
@@ -208,22 +335,34 @@ function EnquiryForm({ seller, onClose }: { seller: SellerProfile | null; onClos
 }
 
 export function TopSellersListing({ countryName }: { countryName: string }) {
-  const [sellers, setSellers] = React.useState<SellerProfile[]>([]);
+  const localSellers = spreadsheetSellersFor(countryName);
+  const isCombinedDirectory = countryName.trim().toLowerCase() === "all";
+  const [sellers, setSellers] = React.useState<SellerProfile[]>(() => localSellers || []);
   const [selected, setSelected] = React.useState<SellerProfile | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [selectedDetails, setSelectedDetails] = React.useState<SellerProfile | null>(null);
+  const [loading, setLoading] = React.useState(localSellers === null);
 
   React.useEffect(() => {
+    const spreadsheetResults = spreadsheetSellersFor(countryName);
+    if (spreadsheetResults) {
+      setSellers(spreadsheetResults);
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     const params = new URLSearchParams({ country: countryName, limit: "12" });
     void fetch(`${apiBaseUrl}/market/directory/sellers?${params}`, { signal: controller.signal })
       .then(async (response) => {
         const result = await response.json() as SellerResponse;
         if (!response.ok || !result.success) throw new Error("Unable to load sellers");
-        setSellers(fillSellerGrid((result.data || []).slice(0, 12), countryName));
+        setSellers((result.data || []).filter((seller) => {
+          const website = String(seller.website || "").trim().toLowerCase();
+          return website && !website.includes(".example");
+        }).slice(0, 12));
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setSellers(fillSellerGrid([], countryName));
+        setSellers([]);
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
@@ -234,23 +373,34 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-300">
-            {countryFlag(countryName) ? <Image src={countryFlag(countryName)!} alt={`${countryName} flag`} width={24} height={16} className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" /> : null}
-            <span>Marketplace seller directory</span>
+            {(isCombinedDirectory ? ["China", "India"] : [countryName]).map((country) => {
+              const flag = countryFlag(country);
+              return flag ? <Image key={country} src={flag} alt={`${country} flag`} width={24} height={16} className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" /> : null;
+            })}
+            <span>Sourcing agents directory</span>
           </div>
-          <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Top Sourcing Sellers in {countryName}</h2>
-          <p className="mt-3 text-base leading-7 text-muted-foreground">Compare seller profiles from our dashboard and public directory, visit a company website, or send a focused enquiry through ChinaIndiaSourcing.</p>
+          <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{isCombinedDirectory ? "Sourcing Agents in China and India" : `Top Sourcing Sellers in ${countryName}`}</h2>
+          <p className="mt-3 text-base leading-7 text-muted-foreground">{isCombinedDirectory ? "Browse sourcing companies from the supplied China and India directories. Country flags identify each company’s sourcing markets; use the listed contacts or company website to learn more." : `Browse sourcing companies and contact details for ${countryName}. Review each provider’s services, location, and website before sending an enquiry.`}</p>
         </div>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {loading
             ? Array.from({ length: 12 }, (_, index) => <div key={index} className="h-[25rem] animate-pulse rounded-xl border bg-muted/50" />)
-            : sellers.map((seller) => <SellerCard key={seller.id} seller={seller} onEnquire={setSelected} />)}
+            : sellers.map((seller) => <SellerCard key={seller.id} seller={seller} onEnquire={setSelected} onSelect={setSelectedDetails} />)}
         </div>
 
         {!loading && sellers.length === 0 ? (
           <div className="mt-8 rounded-xl border border-dashed bg-background p-8 text-center text-sm text-muted-foreground">No active seller profiles are available for {countryName} right now.</div>
         ) : null}
       </div>
+      <SellerDetailsDialog
+        seller={selectedDetails}
+        onClose={() => setSelectedDetails(null)}
+        onEnquire={(seller) => {
+          setSelectedDetails(null);
+          setSelected(seller);
+        }}
+      />
       <EnquiryForm key={selected?.id || "closed"} seller={selected} onClose={() => setSelected(null)} />
     </section>
   );

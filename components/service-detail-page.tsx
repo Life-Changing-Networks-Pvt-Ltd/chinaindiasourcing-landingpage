@@ -393,7 +393,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Explore active sourcing enquiries</h2>
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Top Sourcing Buyers in {service.origin}</h2>
               <p className="mt-4 text-base leading-7 text-muted-foreground">Browse recent buyer requests and open a card to review the complete sourcing requirement.</p>
             </div>
             <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">{Math.min(12, inquiryData.length)} requests shown</Badge>
