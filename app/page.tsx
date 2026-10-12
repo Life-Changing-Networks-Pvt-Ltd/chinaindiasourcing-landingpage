@@ -31,9 +31,9 @@ import { services, sourceCountries } from "@/lib/services";
 import { routePath } from "@/url";
 
 export const metadata: Metadata = {
-  title: "Find Sourcing Agents in China, India & Beyond | ChinaIndiaSourcing",
+  title: "Sourcing Agents for U.S. Businesses | ChinaIndiaSourcing",
   description:
-    "ChinaIndiaSourcing connects buyers with independent sourcing agents, suppliers, inspectors, and logistics providers across China, India, and other sourcing countries.",
+    "U.S. businesses can discover and compare independent sourcing agents, suppliers, inspectors, and logistics providers in China, India, and other sourcing markets.",
   alternates: countryAlternates(
     routePath.home,
     (market) => routePath.market(market.slug),
@@ -46,21 +46,21 @@ const workflowSteps = [
     icon: ClipboardList,
     title: "Post your requirement",
     description:
-      "Share the product, quantity, specifications, target budget, timeline, and delivery destination so providers understand what you need.",
+      "Share your product, quantity, specifications, target budget in U.S. dollars, delivery city or ZIP code, and timeline so providers understand what you need.",
   },
   {
     number: "02",
     icon: PackageSearch,
     title: "Meet relevant partners",
     description:
-      "Discover independent agents and service providers in your chosen sourcing country, with experience that fits your requirement.",
+      "Discover independent agents and service providers in China, India, and other sourcing markets, with experience that fits your U.S.-bound project.",
   },
   {
     number: "03",
     icon: MessageSquareText,
     title: "Compare scope and offers",
     description:
-      "Review provider experience, deliverables, quotations, samples, production terms, quality checks, and expected timelines.",
+      "Compare provider experience, deliverables, quotes, samples, production terms, quality checks, shipping assumptions, and timelines for delivery to the United States.",
   },
   {
     number: "04",
@@ -75,17 +75,17 @@ const faqs = [
   {
     question: "What is ChinaIndiaSourcing?",
     answer:
-      "ChinaIndiaSourcing is a directory and connection platform where buyers can discover independent sourcing agents, suppliers, inspectors, and logistics providers across multiple countries.",
+      "ChinaIndiaSourcing is a directory and connection platform for U.S. businesses to discover independent sourcing agents, suppliers, inspectors, and logistics providers in China, India, and other sourcing markets.",
   },
   {
     question: "Can I find providers outside China?",
     answer:
-      "Yes. Browse sourcing services by origin country, including India, Vietnam, Taiwan, and other listed markets, then share the requirement with providers that match your needs.",
+      "Yes. Browse providers in India, Vietnam, Taiwan, Mexico, and other listed markets. Share your U.S. delivery destination and ask each provider about its experience with your product, shipping route, and import handoffs.",
   },
   {
     question: "How should I compare sourcing providers?",
     answer:
-      "Send each provider the same product brief and compare relevant experience, exact scope, fees, lead times, communication, quality checkpoints, and the assumptions behind each quotation.",
+      "Send each provider the same brief, including the U.S. delivery destination. Compare experience, scope, fees, lead times, quality checkpoints, and which costs are included, such as freight, insurance, customs brokerage, duties, and delivery. Confirm import costs and requirements with qualified professionals before committing.",
   },
   {
     question: "Does the platform provide sourcing or shipping services directly?",
@@ -95,7 +95,7 @@ const faqs = [
   {
     question: "What details should I include in a requirement?",
     answer:
-      "Include the product or service, specifications, quantity, target price or budget, sourcing country, expected schedule, destination, and any quality or compliance needs you already know.",
+      "Include the product, specifications, quantity, target price in U.S. dollars, preferred sourcing market, expected schedule, U.S. delivery city or ZIP code, and any product, labeling, testing, or compliance needs you already know.",
   },
 ];
 
@@ -107,36 +107,36 @@ const sourcingMarkets = sourceCountries.map((country) => country.name).join(", "
 
 const homeGuideSections = [
   {
-    title: "Start with the result your business needs",
-    description: `Before contacting providers, describe the result you want from your sourcing project. You may need help finding a supplier, comparing manufacturers, checking a product, coordinating an order, or arranging freight and documentation. State the product or service, intended use, quantity, target market, budget, and expected timeline. If some details are not final, label them as estimates and explain what still needs to be decided. A clear brief helps independent businesses understand whether their experience fits the work and gives you a more useful basis for comparing replies.`
+    title: "Start with your U.S. business requirements",
+    description: `Before contacting providers, describe the product you plan to sell or use in the United States, the quantity, specifications, target budget in U.S. dollars, and when you need it. Include the delivery city and ZIP code, whether the order is for wholesale, retail, or ecommerce, and any packaging or labeling expectations. If costs or quantities are still estimates, say so. A clear brief helps independent businesses understand the project and gives you a fair basis for comparing replies.`,
   },
   {
-    title: "Choose an origin market that fits the product",
-    description: `The right sourcing location depends on the product category, supplier capability, order size, required materials, lead time, and target cost. The marketplace lists providers across ${sourcingMarkets}. Treat country as a starting filter rather than a guarantee that every provider can handle every product. Ask where a provider and its proposed suppliers operate, what they make or coordinate, and whether they have experience with your specifications and destination. Comparing more than one origin can help you understand differences in capability, minimum order quantities, customization, and delivery assumptions before you commit.`
+    title: "Choose a sourcing market with U.S. delivery in mind",
+    description: `The right origin depends on the product, supplier capability, order size, materials, lead time, and total cost to your U.S. destination. The marketplace lists providers across ${sourcingMarkets}. Treat location as a starting point, not a guarantee of product fit or delivery. Ask where the provider and proposed suppliers operate, what they can produce or coordinate, and whether they have handled shipments to the United States. Compare minimum order quantities, customization, shipping routes, and delivery assumptions before you commit.`,
   },
   {
-    title: "Find the right type of independent provider",
-    description: `Different projects call for different expertise. A sourcing agent may research suppliers and coordinate communication; an inspection provider may gather evidence against agreed quality criteria; a freight or logistics business may plan transport and handoffs. Some companies offer several of these services, while others focus on one stage. Read each profile and ask who will perform the work, what is handled by partners, and which deliverables are included. ChinaIndiaSourcing is a directory and introduction platform, so the independent business you choose remains responsible for its own services and commitments.`
+    title: "Find the right partner for each part of the import",
+    description: `A sourcing agent may research suppliers and coordinate communication; an inspection provider may check products against agreed criteria; a freight or logistics business may arrange transport and handoffs. Customs brokerage and final delivery may be handled by separate providers. Ask who performs each task, what is included, and where one company's responsibility ends. ChinaIndiaSourcing helps U.S. businesses discover and contact independent providers; the provider you choose remains responsible for its own services and commitments.`,
   },
   {
-    title: "Make provider offers easier to compare",
-    description: `Send the same brief to each provider you are considering. Compare the proposed scope, relevant experience, fees, minimums, lead time, communication plan, and assumptions behind the offer. Ask providers to separate included work from optional services and third-party costs. For example, supplier discovery may not include factory visits, product testing, sample fees, freight, customs brokerage, duties, or final delivery. A comparison table can capture these differences and unanswered questions. This makes it easier to evaluate total project fit instead of choosing from a headline price that may cover a different service.`
+    title: "Compare the full cost of getting goods to the U.S.",
+    description: `Ask each provider to explain what its quote covers and what it excludes. Depending on the project, separate line items may include product and sample costs, tooling, freight, insurance, customs brokerage, duties, and delivery to your U.S. address. Ask who will confirm applicable import charges and what estimates may change. A simple comparison sheet helps you evaluate the likely total cost and compare offers that cover the same work, instead of relying on a headline price.`,
   },
   {
-    title: "Turn product expectations into written checkpoints",
-    description: `Describe the features that matter before samples, production, or inspection begins. Share drawings, dimensions, materials, performance needs, packaging, labelling, and reference photos when available. Agree which items must be approved and what evidence the provider will return, such as supplier details, sample photos, measurements, test records, or inspection findings. Decide who reviews that evidence and how changes are recorded. A written checklist helps prevent different interpretations of “good quality” and gives the provider a practical way to raise specification gaps before they become costly corrections.`
+    title: "Set product and quality expectations for the U.S. market",
+    description: `Share drawings, dimensions, materials, performance needs, packaging, labeling, and reference photos before samples or production begin. Identify any U.S. product safety, testing, or labeling requirements that may apply to your product, and confirm them with the relevant qualified professionals. Agree what must be approved and what evidence you expect, such as sample photos, measurements, test records, or inspection findings. A written checklist helps catch gaps before they become costly corrections.`,
   },
   {
-    title: "Confirm the schedule, responsibilities, and handoffs",
-    description: `Ask for a sequence of milestones, estimated dates, and the person responsible for each step. Depending on the project, this may include supplier responses, quotation review, sample approval, order confirmation, production updates, inspection, document preparation, dispatch, and delivery. Identify what information or decision is needed from you at each milestone. When more than one company is involved, clarify where one provider’s scope ends and the next partner’s work begins. Build review time into the schedule, and ask how delays or changed estimates will be communicated so your team can plan around them.`
+    title: "Plan production, shipping, and U.S. delivery milestones",
+    description: `Ask for estimated dates and an owner for each step: supplier review, sample approval, order confirmation, production updates, inspection, export documents, international transit, customs handoff, and final delivery. Find out what decisions or information your team needs to provide at each milestone. When several providers are involved, clarify who coordinates each handoff. Include time for review and ask how delays or changed estimates will be communicated.`,
   },
   {
-    title: "Review commercial terms before authorizing work",
-    description: `Before making payment or approving a project, verify the provider’s business identity, contact details, payment recipient, service agreement, fees, cancellation terms, and process for handling disputes or changes. Check whether quoted costs are fixed, estimated, or dependent on later measurements and third-party charges. Keep proposals, invoices, approvals, and scope changes together in a dated record. Ask which payment methods and platform safeguards apply to your specific transaction; do not assume every service or off-platform payment is covered. The provider you select should confirm the final scope and terms directly with you in writing.`
+    title: "Put the scope, currency, and payment terms in writing",
+    description: `Before authorizing work, confirm the provider's identity, payment recipient, written scope, fees, cancellation terms, and process for changes or disputes. State whether amounts are quoted in U.S. dollars or another currency, and ask which exchange-rate or third-party charges may apply. Keep proposals, invoices, approvals, and scope changes together. Confirm which platform safeguards apply to your transaction; not every service or off-platform payment is covered. Get the final responsibilities and terms in writing from the provider.`,
   },
   {
-    title: "Use the marketplace to organize your next step",
-    description: `The platform brings provider discovery, buyer requirements, and service information into one place so you can begin a focused conversation. Review the available profiles, share the details relevant to your project, and use provider responses to decide what needs further validation. You remain in control of which independent business to contact and whether to proceed. Save the agreed brief and milestones so that a future order starts with accurate information. Whether you are exploring a first product or coordinating repeat purchasing, a documented process makes it easier to compare options, communicate changes, and keep your sourcing decisions understandable to your team.`
+    title: "Use the marketplace to take your next step",
+    description: `Review provider profiles, share your U.S.-bound requirement, and use replies to decide what to validate next. You choose which independent businesses to contact and whether to proceed. Keep the agreed brief, quote assumptions, and milestones together so your team can compare options, communicate changes, and manage repeat orders with accurate information.`,
   },
 ];
 
@@ -157,7 +157,7 @@ export default function Home() {
               How it works
             </h2>
             <p className="mt-3 text-base font-medium text-foreground/80 sm:text-lg">
-              From your requirement to a sourcing partner you choose
+              From your U.S. import requirement to a sourcing partner you choose
             </p>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -226,11 +226,11 @@ export default function Home() {
         <article className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <Badge variant="secondary">A practical sourcing guide</Badge>
           <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-            How to find and work with a sourcing partner
+            How U.S. businesses can find and work with a sourcing partner
           </h2>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
-            Use this guide to prepare your brief, compare independent providers,
-            and organize the important decisions in a sourcing project.
+            Use this guide to plan an import, compare independent providers, and
+            organize the decisions involved in sourcing products for the U.S. market.
           </p>
           <ol className="mt-10 divide-y divide-blue-100 border-y border-blue-100 dark:divide-blue-950 dark:border-blue-950">
             {homeGuideSections.map((section, index) => (
@@ -250,7 +250,7 @@ export default function Home() {
 
       <PlatformFeatures
         serviceName="sourcing partner discovery"
-        marketName="your market"
+        marketName="the United States"
       />
 
       <section
@@ -340,11 +340,11 @@ export default function Home() {
             <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                  Find the right independent sourcing partner
+                  Find a sourcing partner for your U.S. business
                 </h2>
                 <p className="mt-2 max-w-2xl text-muted-foreground">
-                  Share your product, destination, and service needs to start
-                  comparing providers.
+                  Share your product, U.S. delivery destination, and service needs
+                  to start comparing providers.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">

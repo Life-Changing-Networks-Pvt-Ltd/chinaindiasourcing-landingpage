@@ -639,6 +639,10 @@ export default function SellersPage() {
   const [city, setCity] = useState("");
   const [pincode, setPincode] = useState("");
 
+  const requiresWhatsappVerification =
+    countryCode === "+91" ||
+    (countryCode === "custom" && customCountryCode.replace(/\D/g, "") === "91");
+
   // Step 2: Operational & Sourcing Capabilities
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [targetRegions, setTargetRegions] = useState<string[]>([]);
@@ -1119,8 +1123,14 @@ export default function SellersPage() {
       alert("Please accept the Platform Compliance Agreement to complete seller registration.");
       return;
     }
-    if (!emailVerified || !emailVerificationToken || !whatsappVerified || !whatsappVerificationToken) {
-      alert("Please verify both your business email and WhatsApp number before submitting.");
+    if (
+      !emailVerified ||
+      !emailVerificationToken ||
+      (requiresWhatsappVerification && (!whatsappVerified || !whatsappVerificationToken))
+    ) {
+      alert(requiresWhatsappVerification
+        ? "Please verify your business email and WhatsApp number before submitting."
+        : "Please verify your business email before submitting.");
       return;
     }
     setIsSubmitting(true);
@@ -1960,7 +1970,9 @@ export default function SellersPage() {
                               WhatsApp Number <span className="text-rose-500">*</span>
                             </label>
                             <span className={`text-[11px] font-medium ${whatsappVerified ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
-                              {whatsappVerified ? "Verified ✓" : "OTP Required"}
+                              {requiresWhatsappVerification
+                                ? whatsappVerified ? "Verified ✓" : "OTP Required for India"
+                                : "Email verification only"}
                             </span>
                           </div>
                           <div className="flex gap-2">
@@ -2003,19 +2015,21 @@ export default function SellersPage() {
                                 className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                               />
                             </div>
-                            <OtpVerificationButton
-                              channel="whatsapp"
-                              target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
-                              verified={whatsappVerified}
-                              onVerified={(token) => {
-                                setWhatsappVerificationToken(token);
-                                setWhatsappVerified(true);
-                              }}
-                              onAvailabilityChange={(available, message) => {
-                                setWhatsappRegistrationWarning(available ? "" : message || "This WhatsApp number is already registered.");
-                              }}
-                              className="px-3"
-                            />
+                            {requiresWhatsappVerification ? (
+                              <OtpVerificationButton
+                                channel="whatsapp"
+                                target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
+                                verified={whatsappVerified}
+                                onVerified={(token) => {
+                                  setWhatsappVerificationToken(token);
+                                  setWhatsappVerified(true);
+                                }}
+                                onAvailabilityChange={(available, message) => {
+                                  setWhatsappRegistrationWarning(available ? "" : message || "This WhatsApp number is already registered.");
+                                }}
+                                className="px-3"
+                              />
+                            ) : null}
                           </div>
                           {whatsappRegistrationWarning && (
                             <p role="alert" className="mt-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
@@ -3298,7 +3312,7 @@ export default function SellersPage() {
                         disabled={
                           isSavingDraft ||
                           Boolean(emailRegistrationWarning || whatsappRegistrationWarning) ||
-                          (currentStep === 1 && (!emailVerified || !whatsappVerified))
+                          (currentStep === 1 && (!emailVerified || (requiresWhatsappVerification && !whatsappVerified)))
                         }
                         className="gap-2 text-xs sm:text-sm font-semibold shadow-xs"
                       >
@@ -3314,7 +3328,7 @@ export default function SellersPage() {
                           isSubmitting ||
                           isSavingDraft ||
                           !emailVerified ||
-                          !whatsappVerified ||
+                          (requiresWhatsappVerification && !whatsappVerified) ||
                           Boolean(emailRegistrationWarning || whatsappRegistrationWarning)
                         }
                         className="px-8 py-5 text-sm sm:text-base font-semibold shadow-md gap-2"

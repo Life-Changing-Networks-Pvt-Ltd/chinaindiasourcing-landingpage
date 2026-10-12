@@ -730,6 +730,10 @@ export default function BuyersPage() {
   const [customHourlyBudget, setCustomHourlyBudget] = useState("");
   const [customFixedBudget, setCustomFixedBudget] = useState("");
 
+  const requiresWhatsappVerification =
+    countryCode === "+91" ||
+    (countryCode === "custom" && customCountryCode.replace(/\D/g, "") === "91");
+
   // Image Upload
   const [sampleImage, setSampleImage] = useState<{
     name: string;
@@ -902,8 +906,14 @@ export default function BuyersPage() {
       alert("Please acknowledge the Platform Payment & Fraud Disclaimer checkbox before submitting.");
       return;
     }
-    if (!emailVerified || !emailVerificationToken || !whatsappVerified || !whatsappVerificationToken) {
-      alert("Please verify both your email address and WhatsApp number before submitting.");
+    if (
+      !emailVerified ||
+      !emailVerificationToken ||
+      (requiresWhatsappVerification && (!whatsappVerified || !whatsappVerificationToken))
+    ) {
+      alert(requiresWhatsappVerification
+        ? "Please verify your email address and WhatsApp number before submitting."
+        : "Please verify your email address before submitting.");
       return;
     }
     setIsSubmitting(true);
@@ -1124,8 +1134,8 @@ export default function BuyersPage() {
                           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             WhatsApp Number <span className="text-rose-500">*</span>
                           </label>
-                          <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                            Country code then verify
+                          <span className={`text-[11px] font-medium ${requiresWhatsappVerification ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+                            {requiresWhatsappVerification ? "WhatsApp verification required for India" : "Email verification only for this country"}
                           </span>
                         </div>
                         <div className="flex gap-2 flex-wrap sm:flex-nowrap">
@@ -1191,20 +1201,22 @@ export default function BuyersPage() {
                               className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                             />
                           </div>
-                          <OtpVerificationButton
-                            channel="whatsapp"
-                            target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
-                            verified={whatsappVerified}
-                            onVerified={(token) => {
-                              setWhatsappVerificationToken(token);
-                              setWhatsappVerified(true);
-                            }}
-                            onAvailabilityChange={(available, message) => {
-                              setWhatsappRegistrationWarning(available ? "" : message || "This WhatsApp number is already registered.");
-                            }}
-                            verifiedVariant="secondary"
-                            className="shrink-0"
-                          />
+                          {requiresWhatsappVerification ? (
+                            <OtpVerificationButton
+                              channel="whatsapp"
+                              target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
+                              verified={whatsappVerified}
+                              onVerified={(token) => {
+                                setWhatsappVerificationToken(token);
+                                setWhatsappVerified(true);
+                              }}
+                              onAvailabilityChange={(available, message) => {
+                                setWhatsappRegistrationWarning(available ? "" : message || "This WhatsApp number is already registered.");
+                              }}
+                              verifiedVariant="secondary"
+                              className="shrink-0"
+                            />
+                          ) : null}
                         </div>
                         {whatsappRegistrationWarning && (
                           <p role="alert" className="mt-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
@@ -1832,7 +1844,7 @@ export default function BuyersPage() {
                       disabled={
                         isSubmitting ||
                         !emailVerified ||
-                        !whatsappVerified ||
+                        (requiresWhatsappVerification && !whatsappVerified) ||
                         Boolean(emailRegistrationWarning || whatsappRegistrationWarning)
                       }
                       className="w-full sm:w-auto px-10 py-6 text-base font-semibold shadow-md"
