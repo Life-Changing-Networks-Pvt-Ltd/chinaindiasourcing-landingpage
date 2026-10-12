@@ -1,9 +1,29 @@
 "use client";
 
+import { useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle({ className }: { className?: string }) {
+  useEffect(() => {
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    let savedTheme: string | null = null;
+
+    try {
+      savedTheme = sessionStorage.getItem("theme");
+    } catch {
+      // Use the system preference when browser storage is unavailable.
+    }
+
+    const useDarkTheme = savedTheme
+      ? savedTheme === "dark"
+      : prefersDark;
+
+    root.classList.toggle("dark", useDarkTheme);
+    root.classList.toggle("light", savedTheme === "light");
+  }, []);
+
   const toggleTheme = () => {
     const nextTheme = document.documentElement.classList.contains("dark")
       ? "light"

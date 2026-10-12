@@ -13,7 +13,6 @@ import { InquiryCarousel } from "@/components/inquiry-carousel";
 import { PlatformFeatures } from "@/components/platform-features";
 import { SiteFooter } from "@/components/site-footer";
 import { SourcePageIntro } from "@/components/source-page-intro";
-import { TopBuyersListing } from "@/components/top-buyers-listing";
 import { TopSellersListing } from "@/components/top-sellers-listing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,29 +131,6 @@ export function ChineseFreightForwarderPage({
       />
       <SourcePageIntro title={pageTitle} />
       <TopSellersListing countryName={service.origin} />
-
-      <section
-        id="top-buyers"
-        className="scroll-mt-20 border-b border-border/50 bg-background py-10 sm:py-12"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
-          
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Top buyers looking for China partners
-              </h2>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">
-                Review active buying needs, understand the shipment scope, and find opportunities that match your sourcing or logistics service.
-              </p>
-            </div>
-            <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">
-              12 active buyers
-            </Badge>
-          </div>
-          <TopBuyersListing />
-        </div>
-      </section>
 
       <section
         id="requests"

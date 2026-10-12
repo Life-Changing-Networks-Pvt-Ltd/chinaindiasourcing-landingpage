@@ -1,33 +1,23 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
-  AlertTriangle,
   ArrowRight,
-  Boxes,
-  Check,
-  ClipboardCheck,
-  Factory,
-  FileCheck2,
-  Gauge,
-  MapPinned,
-  PackageCheck,
-  PackageSearch,
-  Route,
   Search,
-  ShieldCheck,
-  Sparkles,
-  Tags,
-  Target,
-  Truck,
-  Users,
+  ClipboardList,
+  FileCheck2,
+  MessagesSquare,
+  Ship,
 } from "lucide-react";
 
+import { InquiryCarousel } from "@/components/inquiry-carousel";
+import { PlatformFeatures } from "@/components/platform-features";
 import { SiteFooter } from "@/components/site-footer";
-import { ChineseFreightForwarderPage } from "@/components/chinese-freight-forwarder-page";
 import { SourcePageIntro } from "@/components/source-page-intro";
-import { ServicesWorldMap } from "@/components/services-world-map";
+import { TopSellersListing } from "@/components/top-sellers-listing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import inquiryData from "@/data/inquiries.json";
 import type { BuyerMarket } from "@/lib/markets";
 import {
   getSourceCountry,
@@ -60,6 +50,46 @@ function localizeServiceText(text: string, market: BuyerMarket) {
     .replaceAll("US delivery destination", `delivery destination in ${market.locationName}`)
     .replaceAll("US delivery handoff", `${market.name} delivery handoff`)
     .replaceAll("US destination", `destination in ${market.locationName}`);
+}
+
+function countryFlagAsset(countryName: string) {
+  const flags: Record<string, string> = {
+    china: "china",
+    india: "india",
+    vietnam: "vietnam",
+    taiwan: "taiwan",
+    "south africa": "south-africa",
+    "united states": "united-states",
+    usa: "united-states",
+    "united kingdom": "uk",
+    uk: "uk",
+    australia: "australia",
+    canada: "canada",
+    "new zealand": "new-zealand",
+    germany: "germany",
+    nigeria: "nigeria",
+    pakistan: "pakistan",
+    bangladesh: "bangladesh",
+    brazil: "brazil",
+    uae: "uae",
+    "united arab emirates": "uae",
+  };
+  const flag = flags[countryName.trim().toLowerCase()];
+  if (flag) return `/flags/${flag}.svg`;
+  const sourceCountryCodes: Record<string, string> = {
+    "south korea": "kr",
+    mexico: "mx",
+    netherlands: "nl",
+    turkey: "tr",
+    malaysia: "my",
+    indonesia: "id",
+    spain: "es",
+    thailand: "th",
+    poland: "pl",
+    philippines: "ph",
+  };
+  const code = sourceCountryCodes[countryName.trim().toLowerCase()];
+  return code ? `https://flagcdn.com/w40/${code}.png` : null;
 }
 
 function getServiceKind(name: string) {
@@ -105,7 +135,7 @@ function buildContent(service: SourcingService, market: BuyerMarket): ContentPro
   if (kind === "freight") {
     return {
       label: "Freight and logistics planning",
-      intro: `Plan the movement of goods from ${origin} to ${destination} around cargo size, urgency, handling needs, and landed-cost priorities—not around a one-size-fits-all shipping quote.`,
+      intro: `Plan the movement of goods from ${origin} to ${destination} around cargo size, urgency, handling needs, and landed-cost priorities, not around a one-size-fits-all shipping quote.`,
       outcomes: [
         { title: "Mode and route fit", description: "Compare suitable air, ocean, rail, road, or multimodal options against time, volume, and budget." },
         { title: "Consolidation planning", description: "Coordinate cargo from one or several suppliers and identify practical handover points." },
@@ -263,18 +293,12 @@ function buildContent(service: SourcingService, market: BuyerMarket): ContentPro
 }
 
 export function ServiceDetailPage({ market, service, regionName }: ServiceDetailPageProps) {
-  if (
-    !regionName &&
-    market.slug === "us" &&
-    service.slug === "chinese-freight-forwarder"
-  ) {
-    return <ChineseFreightForwarderPage market={market} service={service} />;
-  }
-
   const displayMarket = regionName
     ? { ...market, name: regionName, locationName: `${regionName}, ${market.locationName}` }
     : market;
   const sourceCountry = getSourceCountry(service.origin);
+  const sourceFlag = countryFlagAsset(sourceCountry.name);
+  const destinationFlag = countryFlagAsset(market.name);
   const overview = localizeServiceText(service.overview, displayMarket);
   const content = buildContent(service, displayMarket);
   const displayServiceName = serviceDisplayName(service.name);
@@ -282,12 +306,6 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
   const pageTitle = regionName
     ? `${displayServiceName} for Buyers in ${regionName}`
     : `${displayServiceName} for ${displayMarket.name} Buyers`;
-  const briefDetails = [
-    { icon: FileCheck2, title: "Product specification", description: "Materials, dimensions, packaging, certifications, and reference files." },
-    { icon: PackageSearch, title: "Order target", description: "Expected quantity, preferred MOQ, sample needs, and reorder plans." },
-    { icon: Tags, title: "Commercial range", description: "Target unit cost, total budget, payment expectations, and key terms." },
-    { icon: Route, title: "Delivery plan", description: `Required date, destination in ${displayMarket.locationName}, shipping preference, and final-mile needs.` },
-  ];
   const faqs = [
     {
       question: `What does ${displayServiceName} include?`,
@@ -308,6 +326,40 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
     {
       question: `Can quality checks and shipping to ${displayMarket.locationName} be coordinated?`,
       answer: "They can be included in the sourcing plan. Inspection criteria, release decisions, documents, freight responsibilities, customs handoffs, and final delivery requirements should be confirmed as separate milestones.",
+    },
+  ];
+  const guideSections = [
+    {
+      title: "Start with a complete requirement",
+      description: `Explain what you need from ${displayServiceName} and why the service is required for your order or project. Include the product or shipment type, specifications, quantity, current status, preferred schedule, and delivery location in ${displayMarket.locationName}. If you are still deciding, share the information you have and clearly mark estimates or unanswered questions. A useful first brief also describes the result you expect, such as a comparable supplier shortlist, a verified inspection report, a customs handoff, or a delivered shipment. This context helps independent providers in ${service.origin} judge whether their experience and service scope fit your request.`
+    },
+    {
+      title: "Make the service scope specific",
+      description: `${content.outcomes[0].description} Before accepting a proposal, ask the provider to turn that outcome into a written list of tasks, deliverables, exclusions, and decision points. The listed service may include ${service.includes[0]?.toLowerCase() || "the agreed service activities"}, but the exact commitment depends on the provider and your requirement. Confirm who will contact suppliers or partners, who prepares records, which parties must approve each step, and what evidence you will receive. Specific scope language makes it easier to compare offers and reduces the chance that you and the provider assume different work is included.`
+    },
+    {
+      title: "Compare providers on the same basis",
+      description: `${content.outcomes[1].description} Share the same brief with each provider and request answers in a consistent format. Compare relevant experience, location coverage, team responsibilities, communication method, availability, and the assumptions behind any price or timeline. For ${displayServiceName}, ask each candidate to identify what depends on information that is not yet confirmed. A lower starting quote may cover fewer tasks or rely on different volumes, service levels, or delivery terms. Record the differences, ask follow-up questions, and shortlist providers based on fit and clarity as well as price.`
+    },
+    {
+      title: "Check information and documents early",
+      description: `${content.checkpoints[0].description} Gather the records that support those checks before the relevant milestone, and make sure names, addresses, product descriptions, quantities, and dates agree across files. Ask which documents the provider needs from you, the supplier, or another partner, who will review them, and how corrections will be handled. Keep a dated copy of the version used for each approval. If a detail is unknown, identify its owner and the date it must be confirmed. Early document review gives the team time to resolve gaps before they affect booking, production, inspection, customs processing, or delivery.`
+    },
+    {
+      title: "Agree how quality, compliance, or acceptance is decided",
+      description: `${content.checkpoints[1].description} Convert expectations into checks that can be observed or documented. Depending on the service, that may mean confirming supplier identity, verifying a specification, defining inspection criteria, agreeing sample acceptance, or arranging a broker or qualified specialist to review compliance questions. Decide what evidence will be shared, who can approve a result, and what happens when a check identifies an issue. Do not rely on a broad promise such as “quality assured” without asking what will be inspected and what standard will be used. Clear acceptance rules help both sides resolve questions against the agreed requirement.`
+    },
+    {
+      title: "Map timing, costs, and dependencies",
+      description: `${content.checkpoints[2].description} Ask for a sequence of milestones with target dates, the person responsible for each handoff, and the information needed to keep work moving. Identify costs that may change with quantity, route, scope, storage, rework, or third-party charges, and ask how those changes will be approved. For work involving goods moving to ${displayMarket.locationName}, clarify where a provider's responsibility ends and another partner's begins. Treat estimates as estimates until their assumptions are confirmed. A practical timeline includes review and approval time, not only the days spent on the core service.`
+    },
+    {
+      title: "Put commercial terms and responsibilities in writing",
+      description: `Before making a payment or authorizing work, confirm the provider's legal or trading name, contact details, payment recipient, deliverables, fees, refund or cancellation terms, and process for resolving delays or disputes. Confirm whether third-party charges are included, estimated, or billed separately. The provider you select remains responsible for the work and terms agreed directly with you; ChinaIndiaSourcing helps buyers discover and contact independent businesses. Keep quotations, messages that change the scope, approvals, receipts, and final records together. A written record protects the shared understanding and gives you a clear reference if the requirement changes during the project.`
+    },
+    {
+      title: "Set a clear handoff and update routine",
+      description: `${content.outcomes[3].description} Agree who your day-to-day contact is, how often progress updates will arrive, and which events should trigger an immediate message. Useful updates explain what is complete, what is waiting, what decision is needed, and whether the forecast has changed. Before closing the engagement, ask for the final documents, reports, contact handoffs, tracking details, or next-step recommendations that belong to the agreed scope. Save these with your order records so repeat work can start from accurate information. A simple update routine helps buyers in ${displayMarket.locationName} coordinate their own team, inventory, and customers.`
     },
   ];
   const schema = [
@@ -335,202 +387,133 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
     <main className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
       <SourcePageIntro title={pageTitle} />
+      <TopSellersListing countryName={service.origin} />
 
-      <section className="relative overflow-hidden border-b border-border/50 bg-blue-50/50 dark:bg-blue-950/10">
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <div className="absolute -left-24 -top-24 size-80 rounded-full bg-cyan-300/25 blur-3xl dark:bg-cyan-700/10" />
-          <div className="absolute -right-20 bottom-0 size-96 rounded-full bg-indigo-300/25 blur-3xl dark:bg-indigo-700/10" />
-        </div>
-        <div className="relative mx-auto grid max-w-7xl gap-7 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[1.02fr_0.98fr] lg:items-start lg:px-8">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">For buyers in {displayMarket.name}</Badge>
-              <Badge variant="outline" className="bg-background/70">
-                <img src={`https://flagcdn.com/w40/${sourceCountry.flagCode}.png`} alt={`${sourceCountry.name} flag`} width={24} height={16} className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" />
-                {service.origin}
-              </Badge>
+      <section id="requests" className="scroll-mt-20 border-b border-border/50 bg-slate-50/55 py-10 dark:bg-slate-950/20 sm:py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Explore active sourcing enquiries</h2>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">Browse recent buyer requests and open a card to review the complete sourcing requirement.</p>
             </div>
-            <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">{content.label}</p>
-            <h2 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">Find the right {service.origin} partner for your buying requirement</h2>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">{content.intro}</p>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">{overview}</p>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground"><strong className="text-foreground">Platform role:</strong> ChinaIndiaSourcing does not manufacture, sell, inspect, ship, or act as the sourcing agent. We connect buyers with independent businesses that provide those services.</p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild><Link href={routePath.buyers}><Search aria-hidden="true" />Post a requirement</Link></Button>
-              <Button size="lg" variant="outline" asChild><a href="#process"><ClipboardCheck aria-hidden="true" />See the process</a></Button>
-            </div>
+            <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">{Math.min(12, inquiryData.length)} requests shown</Badge>
           </div>
-
-          <div className="relative py-2 lg:pl-5">
-            <div className="flex items-center justify-between gap-4">
-              <div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">Sourcing from {service.origin}</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">{service.origin} sourcing coverage</h2></div>
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-blue-200/80 bg-background/50 text-blue-700 backdrop-blur-sm dark:border-blue-800/60 dark:text-blue-300"><MapPinned className="size-5" aria-hidden="true" /></span>
-            </div>
-            <div className="mt-4 flex h-[260px] items-center justify-center sm:h-[330px] lg:h-[360px]">
-              <ServicesWorldMap highlightedCountryCodes={[sourceCountry.flagCode]} expandOnDesktop={false} />
-            </div>
-            <div className="mt-3 grid grid-cols-3 border-y border-blue-200/70 py-3 text-center text-sm dark:border-blue-800/50">
-              <div><strong className="block text-lg text-foreground">{regionName ? "Regional" : "Countrywide"}</strong><span className="text-muted-foreground">Coordination</span></div>
-              <div className="border-x border-blue-200/70 dark:border-blue-800/50"><strong className="block text-xl text-foreground">1</strong><span className="text-muted-foreground">Clear workflow</span></div>
-              <div><strong className="block text-xl text-foreground">2</strong><span className="text-muted-foreground">Markets linked</span></div>
-            </div>
+          <InquiryCarousel layout="grid" limit={12} />
+          <div className="mt-8 flex justify-center">
+            <Button size="lg" asChild><Link href={routePath.buyers}>View more <ArrowRight aria-hidden="true" /></Link></Button>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-border/50 bg-background py-10 sm:py-12">
+      <section className="border-b border-border/50 bg-sky-50/25 py-12 dark:bg-sky-950/10 sm:py-16">
+        <article className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="gap-2">
+              {sourceFlag ? <Image src={sourceFlag} alt={`${sourceCountry.name} flag`} width={24} height={16} unoptimized className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" /> : null}
+              Sourcing in {sourceCountry.name}
+            </Badge>
+            <ArrowRight className="size-4 text-muted-foreground" aria-hidden="true" />
+            <Badge variant="outline" className="gap-2 bg-background/70">
+              {destinationFlag ? <Image src={destinationFlag} alt={`${market.name} flag`} width={24} height={16} className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" /> : null}
+              Buyers in {displayMarket.locationName}
+            </Badge>
+          </div>
+          <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">What to check before choosing {displayServiceName}</h2>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">Use this practical guide to prepare for {displayServiceName}, compare independent providers in {service.origin}, and coordinate the work for buyers in {displayMarket.locationName}.</p>
+          <ol className="mt-10 divide-y divide-blue-100 border-y border-blue-100 dark:divide-blue-950 dark:border-blue-950">
+            {guideSections.map((item, index) => (
+              <li key={item.title} className="grid gap-4 py-7 sm:grid-cols-[3rem_1fr]">
+                <span className="flex size-10 items-center justify-center rounded-full bg-blue-700 text-sm font-semibold text-white">{String(index + 1).padStart(2, "0")}</span>
+                <div><h3 className="text-xl font-semibold">{item.title}</h3><p className="mt-2 leading-7 text-foreground/75">{item.description}</p></div>
+              </li>
+            ))}
+          </ol>
+        </article>
+      </section>
+
+      <section id="process" className="scroll-mt-20 border-b border-border/50 bg-background py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl"><Badge variant="outline">What better coordination changes</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Decisions backed by clearer information</h2><p className="mt-3 leading-7 text-muted-foreground">Each stage should produce something a buyer can compare, approve, or act on—not another disconnected message thread.</p></div>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {content.outcomes.map((item, index) => {
-              const icons = [Target, Boxes, ShieldCheck, Truck];
-              const Icon = icons[index];
-              return <Card key={item.title} className={`h-full border-border/50 shadow-none ${index % 2 ? "bg-cyan-50/65 dark:bg-cyan-950/15" : "bg-blue-50/65 dark:bg-blue-950/15"}`}><CardHeader><span className="flex size-10 items-center justify-center rounded-xl bg-background text-blue-700 shadow-sm dark:text-blue-300"><Icon className="size-5" aria-hidden="true" /></span><CardTitle className="mt-3 text-lg">{item.title}</CardTitle><p className="text-sm leading-6 text-muted-foreground">{item.description}</p></CardHeader></Card>;
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">How it works</h2>
+            <p className="mt-3 text-base font-medium text-foreground/80 sm:text-lg">From a clear requirement to a provider you choose</p>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {service.process.slice(0, 4).map((step, index) => {
+              const icons = [ClipboardList, MessagesSquare, FileCheck2, Ship];
+              const Icon = icons[index] || FileCheck2;
+              return (
+                <Card key={step.title} className="h-full border-border/50 bg-blue-50/45 shadow-none dark:bg-blue-950/15">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <span className="flex size-10 items-center justify-center rounded-full bg-blue-700 text-white"><Icon className="size-5" aria-hidden="true" /></span>
+                      <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">{String(index + 1).padStart(2, "0")}</span>
+                    </div>
+                    <CardTitle className="mt-4 text-lg leading-6">{step.title}</CardTitle>
+                    <p className="text-sm leading-6 text-muted-foreground">{localizeServiceText(step.description, displayMarket)}</p>
+                  </CardHeader>
+                </Card>
+              );
             })}
           </div>
         </div>
       </section>
 
-      <section className="border-b border-border/50 bg-slate-50/60 py-10 dark:bg-slate-950/20 sm:py-12">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-center lg:px-8">
-          <div><Badge variant="secondary">Platform-assisted workflow</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">One visible path from brief to provider handoff</h2><p className="mt-3 leading-7 text-muted-foreground">Use the platform to compare options and organize decisions while each independent provider remains accountable for the scope you agree with them.</p></div>
-          <Card className="overflow-hidden border-blue-200/70 bg-background/85 shadow-xl shadow-blue-950/5 dark:border-blue-900/60">
-            <CardContent className="p-5 sm:p-7">
-              <div className="grid gap-3 sm:grid-cols-4">
-                {[{ icon: ClipboardCheck, title: "Define", text: "Brief and targets" }, { icon: Factory, title: "Match", text: "Partner options" }, { icon: ShieldCheck, title: "Verify", text: "Evidence and checks" }, { icon: PackageCheck, title: "Deliver", text: "Release and handoff" }].map(({ icon: Icon, title, text }, index) => (
-                  <div key={title} className="relative rounded-xl border border-border/60 bg-blue-50/55 p-4 dark:bg-blue-950/20">
-                    {index < 3 && <ArrowRight className="absolute -right-5 top-1/2 z-10 hidden size-5 -translate-y-1/2 rounded-full bg-background text-blue-600 sm:block" aria-hidden="true" />}
-                    <Icon className="size-5 text-blue-700 dark:text-blue-300" aria-hidden="true" /><p className="mt-3 font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                {[{ icon: Gauge, title: "Quote clarity", text: "Comparable assumptions" }, { icon: ShieldCheck, title: "Quality gates", text: "Defined approvals" }, { icon: Route, title: "Milestone tracking", text: "Visible handoffs" }].map(({ icon: Icon, title, text }) => <div key={title} className="flex items-center gap-3 rounded-lg border border-border/50 px-3 py-3"><Icon className="size-5 text-cyan-700 dark:text-cyan-300" aria-hidden="true" /><div><p className="text-sm font-medium">{title}</p><p className="text-xs text-muted-foreground">{text}</p></div></div>)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      <PlatformFeatures serviceName={displayServiceName} marketName={displayMarket.locationName} />
 
-      <section className="border-b border-border/50 bg-background py-10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
-            <div><Badge variant="outline">A stronger starting brief</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight">Share the details that shape the right plan</h2><p className="mt-3 max-w-xl leading-7 text-muted-foreground">You do not need a finished technical pack to begin. A clear starting brief focuses partner conversations, makes options easier to compare, and identifies open questions early.</p></div>
-            <div className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
-              {briefDetails.map(({ icon: Icon, title, description }) => <div key={title} className="flex gap-4 border-t border-border/70 pt-5"><span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"><Icon className="size-5" aria-hidden="true" /></span><div><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p></div></div>)}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl"><Badge variant="outline">Service scope</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">What listed {service.origin} providers can cover</h2></div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {service.includes.map((item, index) => <Card key={item} className={`border-border/50 shadow-none ${index % 3 === 0 ? "bg-blue-50/70 dark:bg-blue-950/20" : index % 3 === 1 ? "bg-cyan-50/70 dark:bg-cyan-950/20" : "bg-indigo-50/70 dark:bg-indigo-950/20"}`}><CardContent className="flex items-start gap-3 px-5"><span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-background"><Check className="size-4" aria-hidden="true" /></span><p className="leading-6">{localizeServiceText(item, displayMarket)}</p></CardContent></Card>)}
-          </div>
-        </div>
-      </section>
-
-      <section id="process" className="scroll-mt-16 border-y border-border/50 bg-sky-50/40 py-10 dark:bg-sky-950/10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl"><Badge variant="secondary">How it works</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">A clear path from brief to execution</h2></div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {service.process.map((step, index) => {
-              const cardTones = [
-                "border-blue-200/70 bg-blue-100/60 dark:border-blue-900/60 dark:bg-blue-950/25",
-                "border-cyan-200/70 bg-cyan-100/60 dark:border-cyan-900/60 dark:bg-cyan-950/25",
-                "border-indigo-200/70 bg-indigo-100/55 dark:border-indigo-900/60 dark:bg-indigo-950/25",
-                "border-sky-200/70 bg-sky-100/60 dark:border-sky-900/60 dark:bg-sky-950/25",
-              ];
-              const numberTones = [
-                "bg-blue-700 text-white",
-                "bg-cyan-700 text-white",
-                "bg-indigo-700 text-white",
-                "bg-sky-700 text-white",
-              ];
-
-              return <Card key={step.title} className={`h-full shadow-none ${cardTones[index % cardTones.length]}`}><CardHeader><div className={`flex size-9 items-center justify-center rounded-full text-sm font-semibold ${numberTones[index % numberTones.length]}`}>{String(index + 1).padStart(2, "0")}</div><CardTitle className="mt-3">{step.title}</CardTitle><p className="text-sm leading-6 text-muted-foreground">{localizeServiceText(step.description, displayMarket)}</p></CardHeader></Card>;
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border/50 bg-background py-10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
-            <div><Badge variant="outline">Commercial checkpoints</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Questions to settle before money or goods move</h2><p className="mt-3 leading-7 text-muted-foreground">These checkpoints help turn assumptions into written decisions that can be revisited throughout the order.</p></div>
-            <div className="space-y-3">
-              {content.checkpoints.map((item, index) => {
-                const checkpointTones = [
-                  "border-blue-200/70 bg-blue-100/55 dark:border-blue-900/60 dark:bg-blue-950/25",
-                  "border-cyan-200/70 bg-cyan-100/55 dark:border-cyan-900/60 dark:bg-cyan-950/25",
-                  "border-indigo-200/70 bg-indigo-100/50 dark:border-indigo-900/60 dark:bg-indigo-950/25",
-                ];
-                const numberTones = ["bg-blue-700", "bg-cyan-700", "bg-indigo-700"];
-
-                return <div key={item.title} className={`grid gap-3 rounded-xl border p-4 sm:grid-cols-[auto_1fr] sm:items-start ${checkpointTones[index % checkpointTones.length]}`}><span className={`flex size-9 items-center justify-center rounded-full text-sm font-semibold text-white ${numberTones[index % numberTones.length]}`}>{index + 1}</span><div><h3 className="font-semibold">{item.title}</h3><p className="mt-1 text-sm leading-6 text-muted-foreground">{item.description}</p></div></div>;
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border/50 bg-indigo-50/35 py-10 dark:bg-indigo-950/10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl"><Badge variant="secondary">Risk and control</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Replace sourcing blind spots with practical controls</h2></div>
-          <div className="mt-7 grid gap-5 lg:grid-cols-2">
-            <Card className="border-rose-200/70 bg-rose-50/65 shadow-none dark:border-rose-900/50 dark:bg-rose-950/15"><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="size-5 text-rose-600" aria-hidden="true" />Without a connected plan</CardTitle></CardHeader><CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">{["Supplier claims can be difficult to compare.", "Headline prices may hide different specifications or trade terms.", "Quality issues may appear after production or payment.", "Shipping responsibilities can remain unclear until dispatch."].map((item) => <p key={item} className="flex gap-2"><span aria-hidden="true">—</span>{item}</p>)}</CardContent></Card>
-            <Card className="border-emerald-200/70 bg-emerald-50/65 shadow-none dark:border-emerald-900/50 dark:bg-emerald-950/15"><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-5 text-emerald-700" aria-hidden="true" />With defined checkpoints</CardTitle></CardHeader><CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">{["Shortlists are tied to stated capability and order needs.", "Quotes share a consistent specification and commercial basis.", "Samples, inspections, and approvals create decision evidence.", "Documents and logistics handoffs are discussed before shipment."].map((item) => <p key={item} className="flex gap-2"><Check className="mt-1 size-4 shrink-0 text-emerald-700" aria-hidden="true" />{item}</p>)}</CardContent></Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border/50 bg-background py-10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl"><Badge variant="outline">Who this is for</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Built around real buying scenarios</h2></div>
-          <div className="mt-7 grid gap-4 md:grid-cols-3">
-            {content.idealFor.map((item, index) => {
-              const icons = [Users, Boxes, Factory];
-              const Icon = icons[index];
-              const cardTones = [
-                "border-blue-200/70 bg-blue-100/55 dark:border-blue-900/60 dark:bg-blue-950/25",
-                "border-cyan-200/70 bg-cyan-100/55 dark:border-cyan-900/60 dark:bg-cyan-950/25",
-                "border-indigo-200/70 bg-indigo-100/50 dark:border-indigo-900/60 dark:bg-indigo-950/25",
-              ];
-              const iconTones = [
-                "text-blue-700 dark:text-blue-300",
-                "text-cyan-700 dark:text-cyan-300",
-                "text-indigo-700 dark:text-indigo-300",
-              ];
-
-              return <Card key={item.title} className={`shadow-none ${cardTones[index % cardTones.length]}`}><CardContent className="px-5"><Icon className={`size-6 ${iconTones[index % iconTones.length]}`} aria-hidden="true" /><h3 className="mt-4 text-lg font-semibold">{item.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p></CardContent></Card>;
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border/50 bg-sky-50/30 py-10 dark:bg-sky-950/10 sm:py-12">
+      <section className="border-b border-blue-100 bg-blue-50/45 py-12 dark:border-blue-950 dark:bg-blue-950/10 sm:py-16">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.72fr_1.28fr] lg:px-8">
-          <div><Badge variant="secondary">Frequently asked questions</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Questions buyers ask before getting started</h2><p className="mt-3 leading-7 text-muted-foreground">The exact answer depends on the product and trade lane, but these points help define a practical first conversation.</p></div>
-          <div className="divide-y divide-border/60 rounded-2xl border border-border/60 bg-background px-5 sm:px-6">
-            {faqs.map((faq) => <details key={faq.question} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold"><span>{faq.question}</span><span className="text-xl font-normal text-blue-700 transition-transform group-open:rotate-45" aria-hidden="true">+</span></summary><p className="mt-3 pr-8 text-sm leading-7 text-muted-foreground">{faq.answer}</p></details>)}
+          <div>
+            <Badge variant="secondary">Frequently asked questions</Badge>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Common {displayServiceName.toLowerCase()} questions</h2>
+            <p className="mt-4 leading-7 text-muted-foreground">Use these answers to prepare before discussing your requirement with an independent provider.</p>
+          </div>
+          <div className="divide-y divide-blue-100 rounded-2xl border border-blue-100 bg-white px-5 shadow-sm dark:divide-blue-950 dark:border-blue-950 dark:bg-slate-950 sm:px-6">
+            {faqs.map((faq) => (
+              <details key={faq.question} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
+                  <span>{faq.question}</span><span className="text-xl font-normal text-blue-700 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <p className="mt-3 pr-8 text-sm leading-7 text-muted-foreground">{faq.answer}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      {relatedServices.length > 0 && <section className="bg-background py-10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><Badge variant="outline">Related {service.origin} services</Badge><h2 className="mt-3 text-3xl font-semibold tracking-tight">Continue building your sourcing plan</h2></div><Button variant="outline" asChild><Link href={routePath.services}>View all services<ArrowRight aria-hidden="true" /></Link></Button></div>
-          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {relatedServices.map((item) => <Link key={item.slug} href={routePath.marketService(market.slug, item.slug)} className="group flex items-center justify-between rounded-xl border border-border/60 bg-blue-50/40 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-blue-950/10 dark:hover:border-blue-800"><span className="font-medium">{serviceDisplayName(item.name)}</span><ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" /></Link>)}
+      {relatedServices.length > 0 && (
+        <section className="bg-background py-10 sm:py-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">Continue building your sourcing plan</h2>
+              <Button variant="outline" asChild><Link href={routePath.services}>View all services <ArrowRight aria-hidden="true" /></Link></Button>
+            </div>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {relatedServices.map((item) => (
+                <Link key={item.slug} href={routePath.marketService(market.slug, item.slug)} className="group flex items-center justify-between rounded-xl border border-border/60 bg-blue-50/40 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50 dark:bg-blue-950/10 dark:hover:border-blue-800">
+                  <span className="flex min-w-0 items-center gap-3 font-medium">
+                    {sourceFlag ? <Image src={sourceFlag} alt={`${sourceCountry.name} flag`} width={24} height={16} unoptimized className="h-4 w-6 shrink-0 rounded-[2px] border border-black/10 object-cover" /> : null}
+                    <span>{serviceDisplayName(item.name)}</span>
+                  </span>
+                  <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>}
+        </section>
+      )}
 
       <section className="pb-10 sm:pb-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Card className="overflow-hidden border-border/50 bg-blue-100/70 shadow-none dark:bg-blue-950/30"><CardContent className="flex flex-col gap-5 px-6 sm:p-7 lg:flex-row lg:items-center lg:justify-between"><div><Badge variant="secondary"><Sparkles aria-hidden="true" />Start with your requirement</Badge><h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Find providers offering {displayServiceName} in {service.origin}</h2><p className="mt-2 max-w-2xl text-muted-foreground">Tell independent partners what you need to source, your order size, target budget, and delivery destination in {displayMarket.locationName}.</p></div><Button size="lg" asChild><Link href={routePath.buyers}>Post a requirement</Link></Button></CardContent></Card>
+          <div className="rounded-2xl border border-border/50 bg-blue-100/70 p-6 dark:bg-blue-950/30 sm:p-7">
+            <Badge variant="secondary">Start with your requirement</Badge>
+            <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Find providers offering {displayServiceName} in {service.origin}</h2>
+                <p className="mt-2 max-w-2xl text-muted-foreground">Share your product or service needs, order details, target budget, and delivery destination in {displayMarket.locationName}.</p>
+              </div>
+              <Button size="lg" asChild><Link href={routePath.buyers}><Search aria-hidden="true" /> Post a requirement</Link></Button>
+            </div>
+          </div>
         </div>
       </section>
 

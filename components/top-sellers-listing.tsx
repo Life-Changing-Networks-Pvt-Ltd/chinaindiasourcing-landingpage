@@ -48,16 +48,33 @@ const sellerFallbacks: SellerProfile[] = [
   { id: "curated-guidedimports", name: "Marketplace team", companyName: "Guided Imports", title: "China sourcing and supplier management", location: "China", city: "", country: "China", website: "https://guidedimports.com", verified: false, about: "Resources and services for sourcing, supplier checks, and importing products from China.", services: ["Supplier sourcing", "Supplier verification"], turnaroundTime: "By project" },
 ];
 
-function fillSellerGrid(dashboardSellers: SellerProfile[]) {
+function fillSellerGrid(dashboardSellers: SellerProfile[], countryName: string) {
   const eligibleDashboardSellers = dashboardSellers.filter((seller) => {
     const website = String(seller.website || "").trim().toLowerCase();
     return website && !website.includes(".example");
   });
   const names = new Set(eligibleDashboardSellers.map((seller) => seller.companyName.trim().toLowerCase()));
+  const countryFallbacks = sellerFallbacks.filter(
+    (seller) => seller.country.toLowerCase() === countryName.trim().toLowerCase(),
+  );
   return [
     ...eligibleDashboardSellers,
-    ...sellerFallbacks.filter((seller) => !names.has(seller.companyName.toLowerCase())),
+    ...countryFallbacks.filter((seller) => !names.has(seller.companyName.toLowerCase())),
   ].slice(0, 12);
+}
+
+function countryFlag(countryName: string) {
+  const countryFlags: Record<string, string> = {
+    china: "china",
+    india: "india",
+    vietnam: "vietnam",
+    taiwan: "taiwan",
+    "south africa": "south-africa",
+    "united arab emirates": "uae",
+    uae: "uae",
+  };
+  const flag = countryFlags[countryName.trim().toLowerCase()];
+  return flag ? `/flags/${flag}.svg` : null;
 }
 
 function websiteUrl(value?: string) {
@@ -74,6 +91,7 @@ function SellerCard({ seller, onEnquire }: { seller: SellerProfile; onEnquire: (
   const website = websiteUrl(seller.website);
   const tags = seller.services || [];
   const initials = (seller.companyName || seller.name || "S").slice(0, 1).toUpperCase();
+  const flag = countryFlag(seller.country);
 
   return (
     <Card className="group relative h-full overflow-hidden border-border/70 bg-card shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-950/5 dark:hover:border-blue-800">
@@ -99,7 +117,7 @@ function SellerCard({ seller, onEnquire }: { seller: SellerProfile; onEnquire: (
         </div>
 
         <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Image src="/flags/china.svg" alt="" width={20} height={14} className="h-3.5 w-5 rounded-[2px] border border-black/10 object-cover" aria-hidden="true" />
+          {flag ? <Image src={flag} alt="" width={20} height={14} className="h-3.5 w-5 rounded-[2px] border border-black/10 object-cover" aria-hidden="true" /> : null}
           <span>{seller.country || "China"}</span>
           {seller.city ? <><span aria-hidden="true">•</span><span className="truncate">{seller.city}</span></> : null}
         </div>
@@ -201,11 +219,11 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
       .then(async (response) => {
         const result = await response.json() as SellerResponse;
         if (!response.ok || !result.success) throw new Error("Unable to load sellers");
-        setSellers(fillSellerGrid((result.data || []).slice(0, 12)));
+        setSellers(fillSellerGrid((result.data || []).slice(0, 12), countryName));
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setSellers(sellerFallbacks);
+        setSellers(fillSellerGrid([], countryName));
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
@@ -216,10 +234,10 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-300">
-            <Image src="/flags/china.svg" alt="China flag" width={24} height={16} className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" />
+            {countryFlag(countryName) ? <Image src={countryFlag(countryName)!} alt={`${countryName} flag`} width={24} height={16} className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" /> : null}
             <span>Marketplace seller directory</span>
           </div>
-          <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Top sellers in {countryName}</h2>
+          <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Top Sourcing Sellers in {countryName}</h2>
           <p className="mt-3 text-base leading-7 text-muted-foreground">Compare seller profiles from our dashboard and public directory, visit a company website, or send a focused enquiry through ChinaIndiaSourcing.</p>
         </div>
 
