@@ -35,6 +35,7 @@ type SellerProfile = {
 type SellerResponse = { success: boolean; data?: SellerProfile[] };
 
 const sourcingDirectory = spreadsheetSellers as SellerProfile[];
+const SELLERS_PER_PAGE = 12;
 
 const apiBaseUrl = String(
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1",
@@ -341,6 +342,11 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
   const [selected, setSelected] = React.useState<SellerProfile | null>(null);
   const [selectedDetails, setSelectedDetails] = React.useState<SellerProfile | null>(null);
   const [loading, setLoading] = React.useState(localSellers === null);
+  const [visibleSellerCount, setVisibleSellerCount] = React.useState(SELLERS_PER_PAGE);
+
+  React.useEffect(() => {
+    setVisibleSellerCount(SELLERS_PER_PAGE);
+  }, [countryName]);
 
   React.useEffect(() => {
     const spreadsheetResults = spreadsheetSellersFor(countryName);
@@ -385,9 +391,17 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {loading
-            ? Array.from({ length: 12 }, (_, index) => <div key={index} className="h-[25rem] animate-pulse rounded-xl border bg-muted/50" />)
-            : sellers.map((seller) => <SellerCard key={seller.id} seller={seller} onEnquire={setSelected} onSelect={setSelectedDetails} />)}
+            ? Array.from({ length: SELLERS_PER_PAGE }, (_, index) => <div key={index} className="h-[25rem] animate-pulse rounded-xl border bg-muted/50" />)
+            : sellers.slice(0, visibleSellerCount).map((seller) => <SellerCard key={seller.id} seller={seller} onEnquire={setSelected} onSelect={setSelectedDetails} />)}
         </div>
+
+        {!loading && sellers.length > visibleSellerCount ? (
+          <div className="mt-8 flex justify-center">
+            <Button variant="outline" onClick={() => setVisibleSellerCount((count) => count + SELLERS_PER_PAGE)}>
+              Show More
+            </Button>
+          </div>
+        ) : null}
 
         {!loading && sellers.length === 0 ? (
           <div className="mt-8 rounded-xl border border-dashed bg-background p-8 text-center text-sm text-muted-foreground">No active seller profiles are available for {countryName} right now.</div>
