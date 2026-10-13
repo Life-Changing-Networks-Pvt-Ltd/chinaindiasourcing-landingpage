@@ -6,6 +6,7 @@ import { ServiceDetailPage } from "@/components/service-detail-page";
 import { getLocationState, stateRouteParams } from "@/data";
 import { buyerMarkets, getBuyerMarket } from "@/lib/markets";
 import { countryAlternates } from "@/lib/seo";
+import { getSpreadsheetServiceMetadata } from "@/lib/spreadsheet-metadata";
 import {
   customClearancePageTitle,
   getService,
@@ -48,12 +49,17 @@ export async function generateMetadata({ params }: CountryServicePageProps): Pro
 
   const marketTitle = market.slug === "us" ? "USA" : market.name;
   const displayServiceName = serviceDisplayName(service!.name);
+  const matchedMetadata = getSpreadsheetServiceMetadata(country, slug);
 
   return {
-    title: isCustomClearanceService(service!.name)
-      ? customClearancePageTitle(service!.origin, marketTitle)
-      : `${service!.name} for ${market.name} Buyers | ChinaIndiaSourcing`,
-    description: `Find independent providers offering ${displayServiceName} in ${service!.origin} for buyers importing to ${market.locationName}. Compare partners, quotations, quality checkpoints, and delivery options through ChinaIndiaSourcing.`,
+    title:
+      matchedMetadata?.title ??
+      (isCustomClearanceService(service!.name)
+        ? customClearancePageTitle(service!.origin, marketTitle)
+        : `${service!.name} for ${market.name} Buyers | ChinaIndiaSourcing`),
+    description:
+      matchedMetadata?.description ??
+      `Find independent providers offering ${displayServiceName} in ${service!.origin} for buyers importing to ${market.locationName}. Compare partners, quotations, quality checkpoints, and delivery options through ChinaIndiaSourcing.`,
     alternates: countryAlternates(
       routePath.marketService(market.slug, service!.slug),
       (alternateMarket) =>

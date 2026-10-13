@@ -26,14 +26,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { countryAlternates } from "@/lib/seo";
+import { homeSpreadsheetMetadata } from "@/lib/spreadsheet-metadata";
 import inquiryData from "@/data/inquiries.json";
 import { services, sourceCountries } from "@/lib/services";
 import { routePath } from "@/url";
 
 export const metadata: Metadata = {
-  title: "Sourcing Agents for U.S. Businesses | ChinaIndiaSourcing",
-  description:
-    "U.S. businesses can discover and compare independent sourcing agents, suppliers, inspectors, and logistics providers in China, India, and other sourcing markets.",
+  ...homeSpreadsheetMetadata,
   alternates: countryAlternates(
     routePath.home,
     (market) => routePath.market(market.slug),
