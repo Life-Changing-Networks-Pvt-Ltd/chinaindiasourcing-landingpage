@@ -89,7 +89,12 @@ export function CountryTypewriter({
           WebkitBackgroundClip: "text",
           color: "transparent",
           WebkitTextFillColor: "transparent",
-        } : undefined}
+          WebkitTextStroke: "1.5px #000000",
+          paintOrder: "stroke fill",
+        } : {
+          WebkitTextStroke: "1.5px #000000",
+          paintOrder: "stroke fill",
+        }}
       >
         {visibleText}
       </span>
