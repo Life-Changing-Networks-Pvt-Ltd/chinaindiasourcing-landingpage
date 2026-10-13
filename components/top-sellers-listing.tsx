@@ -386,7 +386,7 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
             <span>Sourcing agents directory</span>
           </div>
           <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{isCombinedDirectory ? "Sourcing Agents in China and India" : `Top Sourcing Sellers in ${countryName}`}</h2>
-          <p className="mt-3 text-base leading-7 text-muted-foreground">{isCombinedDirectory ? "Browse sourcing companies from the supplied China and India directories. Country flags identify each company’s sourcing markets; use the listed contacts or company website to learn more." : `Browse sourcing companies and contact details for ${countryName}. Review each provider’s services, location, and website before sending an enquiry.`}</p>
+          <p className="mt-3 text-base leading-7 text-muted-foreground">{isCombinedDirectory ? "Browse sourcing companies from the supplied China and India directories" : `Browse sourcing companies and contact details for ${countryName}. Review each provider’s services, location, and website before sending an enquiry.`}</p>
         </div>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

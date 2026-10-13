@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export type TypewriterItem = {
   text: string;
   className?: string;
+  flagCode?: string;
 };
 
 export function CountryTypewriter({
@@ -77,7 +78,21 @@ export function CountryTypewriter({
       aria-live="polite"
       aria-atomic="true"
     >
-      <span className={item.className}>{visibleText}</span>
+      <span
+        className={item.className}
+        style={item.flagCode ? {
+          backgroundImage: `url(https://flagcdn.com/w160/${item.flagCode}.png)`,
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "100% 100%",
+          backgroundClip: "text",
+          WebkitBackgroundClip: "text",
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+        } : undefined}
+      >
+        {visibleText}
+      </span>
       <span
         className="ml-0.5 inline-block h-[0.9em] w-[0.08em] animate-pulse bg-current align-middle"
         aria-hidden="true"

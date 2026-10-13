@@ -31,6 +31,7 @@ import { CountryTypewriter } from "@/components/ui/country-typewriter";
 import { World, type GlobePosition } from "@/components/ui/globe-client";
 import { Separator } from "@/components/ui/separator";
 import inquiryData from "@/data/inquiries.json";
+import { sourceCountries } from "@/lib/services";
 import { routePath } from "@/url";
 
 const trustPoints = [
@@ -47,13 +48,11 @@ const steps = [
   { number: "04", icon: CreditCard, title: "Select your partner", description: "Agree the scope with your chosen provider and use the platform flow for eligible safeguards.", tone: "bg-indigo-100/60 dark:bg-indigo-950/30" },
 ];
 
-const buyerAudiences = [
-  { text: "Importers", className: "text-[#1D4ED8] dark:text-[#60A5FA]" },
-  { text: "Retailers", className: "text-[#059669] dark:text-[#34D399]" },
-  { text: "Product Brands", className: "text-[#7C3AED] dark:text-[#A78BFA]" },
-  { text: "E-commerce Teams", className: "text-[#0891B2] dark:text-[#22D3EE]" },
-  { text: "Small Businesses", className: "text-foreground" },
-];
+const sourcingCountries = sourceCountries.map(({ name, flagCode }) => ({
+  text: name,
+  flagCode,
+  className: "text-foreground",
+}));
 
 const globeData: GlobePosition[] = [
   { order: 1, startLat: 31.2304, startLng: 121.4737, endLat: 40.7128, endLng: -74.006, arcAlt: 0.3, color: "#bfdbfe" },
@@ -105,17 +104,13 @@ export function SourcePageIntro({ title, showHomepageSections }: SourcePageIntro
               title
             ) : (
               <>
-                <span>Sourcing for U.S.</span>{" "}
-                <CountryTypewriter items={buyerAudiences} className="min-w-[8ch] justify-center px-0 text-foreground sm:justify-start" typingSpeed={40} deletingSpeed={22} pauseDuration={480} />
+                <span>Sourcing for</span>{" "}
+                <CountryTypewriter items={sourcingCountries} className="min-w-[8ch] justify-center px-0 text-foreground sm:justify-start" typingSpeed={40} deletingSpeed={22} pauseDuration={480} />
               </>
             )}
           </h1>
 
-          {!title && (
-            <p className="mt-5 max-w-3xl text-balance text-base leading-7 text-muted-foreground sm:text-lg">
-              ChinaIndiaSourcing helps U.S. importers and businesses discover independent sourcing agents, suppliers, inspectors, and logistics providers in China, India, and other sourcing markets. Compare providers with your product requirements, U.S. delivery destination, and import plans in mind.
-            </p>
-          )}
+          
 
           <div className="mt-7 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
             <Button
