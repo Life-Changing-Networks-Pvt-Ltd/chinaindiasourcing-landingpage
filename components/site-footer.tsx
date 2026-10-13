@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, Globe2, MapPinned, PackageCheck } from "lucide-react";
+import { ArrowRight, MapPinned, PackageCheck } from "lucide-react";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { chinaServiceNames, indiaServiceNames, serviceSlug } from "@/lib/services";
 import { routePath } from "@/url";
 
@@ -52,12 +53,7 @@ export function SiteFooter({
       <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
         <div className="grid gap-8 border-b border-white/10 pb-9 lg:grid-cols-[0.7fr_1.3fr]">
           <div>
-            <Link href={routePath.home} className="inline-flex items-center gap-3 text-xl font-semibold tracking-tight">
-              <span className="flex size-10 items-center justify-center rounded-xl border border-white/15 bg-white/10">
-                <Globe2 className="size-5" aria-hidden="true" />
-              </span>
-              Chinaindiasourcing
-            </Link>
+            <BrandLogo inverted />
             <p className="mt-4 max-w-md text-base leading-7 text-slate-300">
               A directory and connection platform helping buyers in {marketName} discover independent sourcing agents, suppliers, inspectors, and logistics providers worldwide.
             </p>

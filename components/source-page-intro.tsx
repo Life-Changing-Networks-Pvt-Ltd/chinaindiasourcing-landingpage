@@ -118,7 +118,7 @@ export function SourcePageIntro({ title, showHomepageSections }: SourcePageIntro
               className="h-14 rounded-xl bg-gradient-to-r from-black via-zinc-900 to-neutral-700 px-8 text-base font-semibold text-white shadow-lg shadow-black/20 hover:from-neutral-900 hover:via-black hover:to-zinc-800 sm:min-w-52 sm:text-lg"
               asChild
             >
-              <Link href={routePath.buyers}>I'm a Buyer<Search aria-hidden="true" /></Link>
+              <Link href={routePath.buyers}>I&apos;m a Buyer<Search aria-hidden="true" /></Link>
             </Button>
             <Button
               size="lg"
@@ -126,7 +126,7 @@ export function SourcePageIntro({ title, showHomepageSections }: SourcePageIntro
               className="h-14 rounded-xl border-neutral-800 bg-gradient-to-r from-white via-zinc-50 to-neutral-200 px-8 text-base font-semibold text-neutral-950 shadow-md shadow-black/10 hover:from-neutral-100 hover:via-white hover:to-zinc-200 sm:min-w-52 sm:text-lg"
               asChild
             >
-              <Link href={routePath.sellers}>I'm a Seller<Store aria-hidden="true" /></Link>
+              <Link href={routePath.sellers}>I&apos;m a Seller<Store aria-hidden="true" /></Link>
             </Button>
           </div>
 

@@ -8,7 +8,6 @@ import {
   FileCheck,
   FileText,
   Gavel,
-  Globe2,
   HelpCircle,
   Lock,
   Mail,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
+import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -66,12 +66,7 @@ export default function TermsPage() {
       {/* Top Header */}
       <header className="sticky top-0 z-50 transition-colors duration-200 border-b border-transparent bg-transparent backdrop-blur-md">
         <div className="relative z-10 mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight" aria-label="Chinaindiasourcing home">
-            <span className="flex size-8 items-center justify-center rounded-md border border-border/50 bg-white/70 shadow-xs dark:bg-black/20">
-              <Globe2 className="size-4" aria-hidden="true" />
-            </span>
-            <span>Chinaindiasourcing</span>
-          </Link>
+          <BrandLogo compactOnMobile />
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex gap-2">
               <Link href="/">

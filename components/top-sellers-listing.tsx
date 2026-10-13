@@ -113,6 +113,33 @@ function websiteUrl(value?: string) {
   }
 }
 
+function maskEmail(value: string) {
+  return value.split(/([,;]\s*)/).map((part, index) => {
+    if (index % 2 === 1) return part;
+
+    const email = part.trim();
+    const atIndex = email.indexOf("@");
+    if (atIndex < 1) return email ? `${email.slice(0, 2)}xxx` : "";
+
+    const localPart = email.slice(0, atIndex);
+    const domain = email.slice(atIndex + 1);
+    const [domainName, ...domainSuffix] = domain.split(".");
+    const maskedDomain = `${domainName.slice(0, Math.min(2, domainName.length))}xxx`;
+    return `${localPart.slice(0, Math.min(2, localPart.length))}xxx@${maskedDomain}${domainSuffix.length ? `.${domainSuffix.join(".")}` : ""}`;
+  }).join("");
+}
+
+function maskPhone(value: string) {
+  let visibleDigits = 4;
+  return value.replace(/\d/g, (digit) => {
+    if (visibleDigits > 0) {
+      visibleDigits -= 1;
+      return digit;
+    }
+    return "x";
+  });
+}
+
 function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; onEnquire: (seller: SellerProfile) => void; onSelect: (seller: SellerProfile) => void }) {
   const website = websiteUrl(seller.website);
   const tags = seller.services || [];
@@ -187,8 +214,8 @@ function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; on
 
         {(seller.email || seller.phone) ? (
           <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-            {seller.email ? <a onClick={(event) => event.stopPropagation()} className="flex min-w-0 items-center gap-2 hover:text-foreground" href={`mailto:${seller.email}`} title={seller.email}><Mail className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{seller.email}</span></a> : null}
-            {seller.phone ? <a onClick={(event) => event.stopPropagation()} className="flex min-w-0 items-center gap-2 hover:text-foreground" href={`tel:${seller.phone.replace(/[^+\d]/g, "")}`} title={seller.phone}><Phone className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{seller.phone}</span></a> : null}
+            {seller.email ? <div className="flex min-w-0 items-center gap-2" aria-label="Partially hidden email address"><Mail className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{maskEmail(seller.email)}</span></div> : null}
+            {seller.phone ? <div className="flex min-w-0 items-center gap-2" aria-label="Partially hidden phone number"><Phone className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{maskPhone(seller.phone)}</span></div> : null}
           </div>
         ) : null}
 
@@ -268,8 +295,8 @@ function SellerDetailsDialog({
             <aside className="h-fit rounded-xl border bg-muted/30 p-4 sm:p-5">
               <h3 className="font-semibold">Contact information</h3>
               <div className="mt-4 space-y-4 text-sm">
-                {seller.email ? <div className="flex min-w-0 items-start gap-3"><Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><a className="break-all hover:underline" href={`mailto:${seller.email}`}>{seller.email}</a></div> : null}
-                {seller.phone ? <div className="flex items-start gap-3"><Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><a className="hover:underline" href={`tel:${seller.phone.replace(/[^+\d]/g, "")}`}>{seller.phone}</a></div> : null}
+                {seller.email ? <div className="flex min-w-0 items-start gap-3" aria-label="Partially hidden email address"><Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><span className="break-all">{maskEmail(seller.email)}</span></div> : null}
+                {seller.phone ? <div className="flex items-start gap-3" aria-label="Partially hidden phone number"><Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><span>{maskPhone(seller.phone)}</span></div> : null}
                 {website ? <div className="flex items-start gap-3"><Eye className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><a className="break-all hover:underline" href={website} target="_blank" rel="noreferrer">{seller.website}</a></div> : null}
               </div>
               <div className="mt-6 grid gap-2 sm:grid-cols-2 md:grid-cols-1">
@@ -385,7 +412,7 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
             })}
             <span>Sourcing agents directory</span>
           </div>
-          <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{isCombinedDirectory ? "Sourcing Agents in China and India" : `Top Sourcing Sellers in ${countryName}`}</h2>
+          <h2 id="top-sellers-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{isCombinedDirectory ? "Sourcing Agents Across Global Markets" : `Top Sourcing Sellers in ${countryName}`}</h2>
           <p className="mt-3 text-base leading-7 text-muted-foreground">{isCombinedDirectory ? "Browse sourcing companies from the supplied China and India directories" : `Browse sourcing companies and contact details for ${countryName}. Review each provider’s services, location, and website before sending an enquiry.`}</p>
         </div>
 
