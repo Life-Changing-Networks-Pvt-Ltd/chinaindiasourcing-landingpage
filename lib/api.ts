@@ -11,6 +11,7 @@ type ApiResult<T = unknown> = {
   message?: string;
   resendAfter?: number;
   verificationToken?: string;
+  marketApplicationId?: string;
   code?: string;
   field?: "email" | "whatsapp";
   data?: T;
@@ -44,11 +45,16 @@ export function buildWhatsappNumber(
   return `+${dialCode}${subscriberNumber}`;
 }
 
-export async function sendVerificationOtp(channel: OtpChannel, target: string) {
+export async function sendVerificationOtp(
+  channel: OtpChannel,
+  target: string,
+  marketForm?: MarketForm,
+  marketApplicationId?: string,
+) {
   const path = channel === "email" ? "email" : "whatsapp";
   const body = channel === "email"
-    ? { email: target, verificationContext: "market" }
-    : { whatsappNumber: target, verificationContext: "market" };
+    ? { email: target, verificationContext: "market", marketForm, marketApplicationId }
+    : { whatsappNumber: target, verificationContext: "market", marketForm, marketApplicationId };
   const response = await fetch(`${apiBaseUrl}/live-chat/${path}/send-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -62,12 +68,14 @@ export async function verifyVerificationOtp(
   channel: OtpChannel,
   target: string,
   otp: string,
+  marketForm?: MarketForm,
+  marketApplicationId?: string,
 ) {
   const path = channel === "email" ? "email" : "whatsapp";
   const body =
     channel === "email"
-      ? { email: target, otp, verificationContext: "market" }
-      : { whatsappNumber: target, otp, verificationContext: "market" };
+      ? { email: target, otp, verificationContext: "market", marketForm, marketApplicationId }
+      : { whatsappNumber: target, otp, verificationContext: "market", marketForm, marketApplicationId };
   const response = await fetch(`${apiBaseUrl}/live-chat/${path}/verify-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -106,8 +114,16 @@ export type MarketPaymentDetails = {
   checkoutKey: string;
   orderId: string;
   amount: number;
-  currency: "USD";
+  currency: "USD" | "INR";
   feeUsd: number;
+  baseFeeUsd: number;
+  baseFeeAmount: number;
+  gstPercent: number;
+  gstUsd: number;
+  gstAmount: number;
+  exchangeRate: number;
+  amountDue: number;
+  couponCode: string;
   name: string;
   email: string;
   contact: string;
@@ -182,4 +198,40 @@ export async function requestMarketPaymentHelp(
     },
   );
   return readApiResult(response);
+}
+
+export async function applyMarketPaymentCoupon(
+  form: MarketForm,
+  payment: MarketPaymentDetails,
+  couponCode: string,
+) {
+  const response = await fetch(
+    `${apiBaseUrl}/market/${form}/${payment.applicationId}/payment/coupon`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-market-payment-token": payment.accessToken,
+      },
+      body: JSON.stringify({ couponCode }),
+    },
+  );
+  return readApiResult<MarketPaymentDetails>(response);
+}
+
+export async function refreshMarketPayment(
+  form: MarketForm,
+  payment: MarketPaymentDetails,
+) {
+  const response = await fetch(
+    `${apiBaseUrl}/market/${form}/${payment.applicationId}/payment/refresh`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-market-payment-token": payment.accessToken,
+      },
+    },
+  );
+  return readApiResult<MarketPaymentDetails>(response);
 }

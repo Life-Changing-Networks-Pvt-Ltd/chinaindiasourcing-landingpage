@@ -8,6 +8,7 @@ export const routePath = {
   home: "/",
   buyers: "/buyers",
   sellers: "/sellers",
+  payments: "/payments",
   services: "/services",
   terms: "/terms",
   market: (marketSlug: string) => `/${marketSlug}`,

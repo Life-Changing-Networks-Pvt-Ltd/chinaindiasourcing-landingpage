@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   type OtpChannel,
+  type MarketForm,
   sendVerificationOtp,
   verifyVerificationOtp,
 } from "@/lib/api";
@@ -27,6 +28,9 @@ type OtpVerificationButtonProps = {
   className?: string;
   label?: string;
   verifiedVariant?: "outline" | "secondary";
+  marketForm?: MarketForm;
+  marketApplicationId?: string;
+  onMarketApplicationCreated?: (applicationId: string) => void;
 };
 
 const isValidTarget = (channel: OtpChannel, target: string) => {
@@ -51,6 +55,9 @@ export function OtpVerificationButton({
   className,
   label = "Verify",
   verifiedVariant = "outline",
+  marketForm,
+  marketApplicationId,
+  onMarketApplicationCreated,
 }: OtpVerificationButtonProps) {
   const [open, setOpen] = useState(false);
   const [otp, setOtp] = useState("");
@@ -60,6 +67,46 @@ export function OtpVerificationButton({
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const [otpTarget, setOtpTarget] = useState("");
+  const [resolvedApplicationId, setResolvedApplicationId] = useState(marketApplicationId || "");
+
+  const verificationStorageKey = marketForm
+    ? `market-${marketForm}-${channel}-verification`
+    : "";
+
+  useEffect(() => {
+    if (!verificationStorageKey || !isValidTarget(channel, target)) return;
+    try {
+      const saved = JSON.parse(
+        window.sessionStorage.getItem(verificationStorageKey) || "null",
+      ) as {
+        target?: string;
+        verificationToken?: string;
+        marketApplicationId?: string;
+        expiresAt?: number;
+      } | null;
+      if (
+        saved?.target === target &&
+        saved.verificationToken &&
+        Number(saved.expiresAt || 0) > Date.now()
+      ) {
+        if (saved.marketApplicationId) {
+          setResolvedApplicationId(saved.marketApplicationId);
+          onMarketApplicationCreated?.(saved.marketApplicationId);
+        }
+        onAvailabilityChange?.(true);
+        onVerified(saved.verificationToken);
+      }
+    } catch {
+      window.sessionStorage.removeItem(verificationStorageKey);
+    }
+    // Parent callbacks are intentionally omitted because forms pass inline
+    // handlers; restoration should run only when the saved target changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel, marketForm, target, verificationStorageKey]);
+
+  useEffect(() => {
+    if (marketApplicationId) setResolvedApplicationId(marketApplicationId);
+  }, [marketApplicationId]);
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -83,7 +130,16 @@ export function OtpVerificationButton({
 
     try {
       setIsSending(true);
-      const result = await sendVerificationOtp(channel, target);
+      const result = await sendVerificationOtp(
+        channel,
+        target,
+        marketForm,
+        resolvedApplicationId || marketApplicationId,
+      );
+      if (result.marketApplicationId) {
+        setResolvedApplicationId(result.marketApplicationId);
+        onMarketApplicationCreated?.(result.marketApplicationId);
+      }
       onAvailabilityChange?.(true);
       setOtpTarget(target);
       setOtpSent(true);
@@ -148,8 +204,27 @@ export function OtpVerificationButton({
 
     try {
       setIsVerifying(true);
-      const result = await verifyVerificationOtp(channel, target, otp);
-      onVerified(result.verificationToken as string);
+      const result = await verifyVerificationOtp(
+        channel,
+        target,
+        otp,
+        marketForm,
+        resolvedApplicationId || marketApplicationId,
+      );
+      const verificationToken = result.verificationToken as string;
+      if (verificationStorageKey) {
+        window.sessionStorage.setItem(
+          verificationStorageKey,
+          JSON.stringify({
+            target,
+            verificationToken,
+            marketApplicationId: resolvedApplicationId || marketApplicationId || "",
+            // Kept only for this browser session and aligned with the backend token TTL.
+            expiresAt: Date.now() + 12 * 60 * 60 * 1000,
+          }),
+        );
+      }
+      onVerified(verificationToken);
       setOpen(false);
     } catch (caughtError) {
       const requestError = caughtError as Error & { code?: string };

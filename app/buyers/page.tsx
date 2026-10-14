@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useId, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -676,6 +677,7 @@ function StateSelect({
 }
 
 export default function BuyersPage() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Form State
@@ -684,12 +686,14 @@ export default function BuyersPage() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [emailVerificationToken, setEmailVerificationToken] = useState("");
   const [emailRegistrationWarning, setEmailRegistrationWarning] = useState("");
+  const [marketApplicationId, setMarketApplicationId] = useState("");
 
   const [countryCode, setCountryCode] = useState("+1");
   const [whatsapp, setWhatsapp] = useState("");
   const [whatsappVerified, setWhatsappVerified] = useState(false);
   const [whatsappVerificationToken, setWhatsappVerificationToken] = useState("");
   const [whatsappRegistrationWarning, setWhatsappRegistrationWarning] = useState("");
+  const [showVerificationErrors, setShowVerificationErrors] = useState(false);
 
   const [companyName, setCompanyName] = useState("");
   const [website, setWebsite] = useState("");
@@ -852,7 +856,7 @@ export default function BuyersPage() {
   };
 
   const buildPayload = (): Record<string, unknown> => ({
-    fullName, email, emailVerified, emailVerificationToken, countryCode, whatsapp,
+    fullName, email, emailVerified, emailVerificationToken, marketApplicationId, countryCode, whatsapp,
     whatsappVerified, whatsappVerificationToken, companyName, website, streetAddress,
     landmark, city, state, country, pincode, orderPlaceTime, selectedSources, orderVolume,
     lookingFor, detailedRequirement, budgetType, hourlyBudget, fixedBudget, quantity,
@@ -866,7 +870,25 @@ export default function BuyersPage() {
 
   const saveDraft = () => {
     const payload = buildPayload();
-    if (!Object.values(payload).some((value) => typeof value === "string" && value.trim())) {
+    // Do not call the API just because select fields have default values.
+    // Wait until the buyer has actually entered identifying/form information.
+    const hasUserEnteredData = [
+      fullName,
+      email,
+      whatsapp,
+      companyName,
+      website,
+      streetAddress,
+      landmark,
+      city,
+      state,
+      pincode,
+      lookingFor,
+      detailedRequirement,
+      quantity,
+    ].some((value) => value.trim());
+    if (!hasUserEnteredData) {
+      setDraftMessage("");
       return draftQueue.current;
     }
     draftQueue.current = draftQueue.current
@@ -877,7 +899,7 @@ export default function BuyersPage() {
           if (result.data) {
             draftCredentials.current = { draftId: result.data.draftId, draftToken: result.data.draftToken };
             sessionStorage.setItem("market-buyers-draft", JSON.stringify(draftCredentials.current));
-            setDraftMessage("Draft saved");
+            setDraftMessage("");
           }
         } catch (error) {
           const requestError = error as Error & {
@@ -892,7 +914,13 @@ export default function BuyersPage() {
             }
             setDraftMessage("");
           } else {
-            setDraftMessage(error instanceof Error ? error.message : "Unable to save draft.");
+            setDraftMessage(
+              error instanceof TypeError && /fetch/i.test(error.message)
+                ? "Unable to connect to the server. Your form is still available on this page; please try again shortly."
+                : error instanceof Error
+                  ? error.message
+                  : "Unable to save draft.",
+            );
           }
         }
       });
@@ -911,11 +939,20 @@ export default function BuyersPage() {
       !emailVerificationToken ||
       (requiresWhatsappVerification && (!whatsappVerified || !whatsappVerificationToken))
     ) {
+      setShowVerificationErrors(true);
+      window.setTimeout(() => {
+        document.getElementById(
+          !emailVerified || !emailVerificationToken
+            ? "buyer-email-field"
+            : "buyer-whatsapp-field",
+        )?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
       alert(requiresWhatsappVerification
         ? "Please verify your email address and WhatsApp number before submitting."
         : "Please verify your email address before submitting.");
       return;
     }
+    setShowVerificationErrors(false);
     setIsSubmitting(true);
     try {
       await saveDraft();
@@ -924,8 +961,13 @@ export default function BuyersPage() {
         ...draftCredentials.current,
       });
       if (!result.data) throw new Error("Payment details were not returned.");
-      setPaymentDetails(result.data);
-      window.scrollTo({ top: 300, behavior: "smooth" });
+      sessionStorage.setItem(
+        "market_payment_data",
+        JSON.stringify({ form: "buyers", payment: result.data }),
+      );
+      router.push(
+        `/payments?form=buyers&id=${result.data.applicationId}&token=${encodeURIComponent(result.data.accessToken)}`,
+      );
     } catch (error) {
       const requestError = error as Error & {
         code?: string;
@@ -1034,7 +1076,7 @@ export default function BuyersPage() {
                   }}
                 />
               ) : (
-                <form onSubmit={handleSubmit} onBlurCapture={() => void saveDraft()} className="space-y-6">
+                <form onSubmit={handleSubmit} onBlurCapture={() => void saveDraft()} className="flex flex-col gap-6">
                   {draftMessage && (
                     <p className={`text-center text-xs ${/already|unable|no longer/i.test(draftMessage) ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>
                       {draftMessage}
@@ -1070,13 +1112,16 @@ export default function BuyersPage() {
                       </div>
 
                       {/* Email with Verification */}
-                      <div>
+                      <div id="buyer-email-field">
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             Email ID <span className="text-rose-500">*</span>
                           </label>
-                          <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                            Verification Required
+                          <span className={`text-[11px] font-medium ${emailVerified
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-amber-600 dark:text-amber-400"
+                            }`}>
+                            {emailVerified ? "Verified ✓" : "Verification Required"}
                           </span>
                         </div>
                         <div className="flex gap-2">
@@ -1093,11 +1138,17 @@ export default function BuyersPage() {
                                 setEmailVerificationToken("");
                                 setEmailRegistrationWarning("");
                               }}
-                              className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              className={`w-full rounded-md border bg-background pl-9 pr-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:outline-none focus:ring-2 ${showVerificationErrors && (!emailVerified || !emailVerificationToken)
+                                  ? "border-rose-500 placeholder:text-rose-500 focus:border-rose-500 focus:ring-rose-500/20"
+                                  : "border-input placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20"
+                                }`}
                             />
                           </div>
                           <OtpVerificationButton
                             channel="email"
+                            marketForm="buyers"
+                            marketApplicationId={marketApplicationId}
+                            onMarketApplicationCreated={setMarketApplicationId}
                             target={email.trim().toLowerCase()}
                             verified={emailVerified}
                             onVerified={(token) => {
@@ -1117,16 +1168,30 @@ export default function BuyersPage() {
                             {emailRegistrationWarning}
                           </p>
                         )}
+                        {showVerificationErrors && (!emailVerified || !emailVerificationToken) && !emailRegistrationWarning && (
+                          <p role="alert" className="mt-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                            Please verify this email address.
+                          </p>
+                        )}
                       </div>
 
                       {/* WhatsApp with Country Code + Verification */}
-                      <div>
+                      <div id="buyer-whatsapp-field">
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             WhatsApp Number <span className="text-rose-500">*</span>
                           </label>
-                          <span className={`text-[11px] font-medium ${requiresWhatsappVerification ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
-                            {requiresWhatsappVerification ? "WhatsApp verification required for India" : "Email verification only for this country"}
+                          <span className={`text-[11px] font-medium ${whatsappVerified
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : requiresWhatsappVerification
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-muted-foreground"
+                            }`}>
+                            {whatsappVerified
+                              ? "Verified ✓"
+                              : requiresWhatsappVerification
+                                ? "WhatsApp verification required for India"
+                                : "Email verification only for this country"}
                           </span>
                         </div>
                         <div className="flex gap-2 flex-wrap sm:flex-nowrap">
@@ -1189,12 +1254,17 @@ export default function BuyersPage() {
                                 setWhatsappVerificationToken("");
                                 setWhatsappRegistrationWarning("");
                               }}
-                              className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              className={`w-full rounded-md border bg-background pl-9 pr-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:outline-none focus:ring-2 ${showVerificationErrors && requiresWhatsappVerification && (!whatsappVerified || !whatsappVerificationToken)
+                                  ? "border-rose-500 placeholder:text-rose-500 focus:border-rose-500 focus:ring-rose-500/20"
+                                  : "border-input placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20"
+                                }`}
                             />
                           </div>
                           {requiresWhatsappVerification ? (
                             <OtpVerificationButton
                               channel="whatsapp"
+                              marketForm="buyers"
+                              marketApplicationId={marketApplicationId}
                               target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
                               verified={whatsappVerified}
                               onVerified={(token) => {
@@ -1212,6 +1282,11 @@ export default function BuyersPage() {
                         {whatsappRegistrationWarning && (
                           <p role="alert" className="mt-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
                             {whatsappRegistrationWarning}
+                          </p>
+                        )}
+                        {showVerificationErrors && requiresWhatsappVerification && (!whatsappVerified || !whatsappVerificationToken) && !whatsappRegistrationWarning && (
+                          <p role="alert" className="mt-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                            Please verify this WhatsApp number.
                           </p>
                         )}
                       </div>
@@ -1250,105 +1325,240 @@ export default function BuyersPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Card 2: Address Details */}
-                  <Card className="relative z-30 border-border/60 bg-card/90 shadow-sm backdrop-blur-sm">
+                  {/* Card 2: Detailed Sourcing Brief & Budget */}
+                  <Card className="border-border/60 bg-card/90 shadow-sm backdrop-blur-sm">
                     <CardHeader className="border-b border-border/40 pb-4">
                       <div className="flex items-center gap-3">
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-                          <MapPin className="size-4" />
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                          <FileText className="size-4" />
                         </span>
                         <div>
-                          <CardTitle className="text-lg">Address &amp; Destination Details</CardTitle>
-
+                          <CardTitle className="text-lg">Detailed Sourcing Brief &amp; Budget</CardTitle>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="grid gap-5 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-                      {/* Street Address */}
-                      <div className="sm:col-span-2">
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          Street Address <span className="text-rose-500">*</span>
-                        </label>
+                    <CardContent className="space-y-6 pt-6">
+                      {/* Looking for (Title with 70 characters max) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label htmlFor={lookingForId} className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                            Looking For (Role / Title) <span className="text-rose-500">*</span>
+                          </label>
+                          <span className={`text-xs ${lookingFor.length > 70 ? "text-rose-500 font-bold" : "text-foreground/75 font-medium"}`}>
+                            {lookingFor.length} / 70 characters
+                          </span>
+                        </div>
                         <input
+                          id={lookingForId}
                           type="text"
                           required
-                          placeholder="e.g. Unit 402, Trade Tower, Sector 62"
-                          value={streetAddress}
-                          onChange={(e) => setStreetAddress(capitalizeWords(e.target.value))}
+                          maxLength={70}
+                          placeholder="e.g. Sourcing agent for EV battery cells / Buying agent for ceramic tiles"
+                          value={lookingFor}
+                          onChange={(e) => setLookingFor(capitalizeFirst(e.target.value))}
                           className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-foreground/85">Quick Suggestions:</span>
+                          {[
+                            "Sourcing Agent",
+                            "Buying Agent",
+                            "Quality Inspection Agent",
+                            "Factory Audit Specialist",
+                            "Freight & Forwarding",
+                          ].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setLookingFor(preset)}
+                              className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
+                                lookingFor === preset
+                                  ? "border-primary bg-primary/10 text-primary font-medium"
+                                  : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                              }`}
+                            >
+                              + {preset}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Landmark */}
+                      {/* Detailed Requirement (50 to 1000 characters) */}
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          Landmark
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Near Metro Station / Port Gate"
-                          value={landmark}
-                          onChange={(e) => setLandmark(capitalizeWords(e.target.value))}
-                          className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label htmlFor={detailedReqId} className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                            Detailed Requirement <span className="text-rose-500">*</span>
+                          </label>
+                          <span
+                            className={`text-xs ${detailedRequirement.length < 50 && detailedRequirement.length > 0
+                                ? "text-amber-500 font-medium"
+                                : detailedRequirement.length > 1000
+                                  ? "text-rose-500 font-bold"
+                                  : "text-foreground/75 font-medium"
+                              }`}
+                          >
+                            {detailedRequirement.length} / 1000 characters (min 50)
+                          </span>
+                        </div>
+                        <textarea
+                          id={detailedReqId}
+                          rows={5}
+                          required
+                          minLength={50}
+                          maxLength={1000}
+                          placeholder="Specify product dimensions, materials, expected packaging, factory certifications, sample turnaround time, target unit pricing, and quality benchmarks..."
+                          value={detailedRequirement}
+                          onChange={(e) => setDetailedRequirement(capitalizeFirst(e.target.value))}
+                          className="w-full rounded-md border border-input bg-background p-3.5 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
-                      </div>
-
-                      {/* Country */}
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          Country <span className="text-rose-500">*</span>
-                        </label>
-                        <CountrySelect value={country} onChange={handleCountryChange} />
-                        {country === "Other Country" && (
-                          <div className="mt-2">
-                            <input
-                              type="text"
-                              required
-                              placeholder="Enter your country name..."
-                              value={customCountry}
-                              onChange={(e) => setCustomCountry(capitalizeWords(e.target.value))}
-                              className="w-full rounded-md border border-primary/40 bg-background px-3 py-1.5 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
+                        {detailedRequirement.length > 0 && detailedRequirement.length < 50 && (
+                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                            Please provide at least {50 - detailedRequirement.length} more characters to ensure accurate matches.
+                          </p>
                         )}
                       </div>
 
-                      {/* State / Province (Dynamic based on selected Country) */}
+                      {/* Budget to hire sourcing agent (Hourly vs Fixed toggle) */}
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          State / Province <span className="text-rose-500">*</span>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-2">
+                          Budget to Hire Sourcing Agent <span className="text-rose-500">*</span>
                         </label>
-                        <StateSelect country={country} value={state} onChange={(val) => setState(val)} />
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div
+                            onClick={() => setBudgetType("hourly")}
+                            className={`cursor-pointer rounded-lg border p-3.5 transition-all ${budgetType === "hourly"
+                                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                : "border-input bg-background hover:bg-muted/40"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-foreground">Hourly Rate</span>
+                              <span className="text-xs text-foreground/75 font-medium">$ 5 / hr to $ 200 / hr</span>
+                            </div>
+                            {budgetType === "hourly" && (
+                              <div className="mt-3 space-y-2">
+                                <select
+                                  aria-label="Hourly Budget Range"
+                                  value={hourlyBudget}
+                                  onChange={(e) => setHourlyBudget(e.target.value)}
+                                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                                >
+                                  {hourlyBudgets.map((h) => (
+                                    <option key={h} value={h}>
+                                      {h}
+                                    </option>
+                                  ))}
+                                </select>
+                                {hourlyBudget === "Custom Hourly Rate" && (
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. $ 250 / hr or Negotiable based on project"
+                                    value={customHourlyBudget}
+                                    onChange={(e) => setCustomHourlyBudget(capitalizeFirst(e.target.value))}
+                                    className="w-full rounded-md border border-primary/40 bg-background px-2.5 py-1 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            onClick={() => setBudgetType("fixed")}
+                            className={`cursor-pointer rounded-lg border p-3.5 transition-all ${budgetType === "fixed"
+                                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                : "border-input bg-background hover:bg-muted/40"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-foreground">Fixed Project Fee</span>
+                              <span className="text-xs text-foreground/75 font-medium">$ 30 to $ 10,000</span>
+                            </div>
+                            {budgetType === "fixed" && (
+                              <div className="mt-3 space-y-2">
+                                <select
+                                  aria-label="Fixed Project Budget Range"
+                                  value={fixedBudget}
+                                  onChange={(e) => setFixedBudget(e.target.value)}
+                                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                                >
+                                  {fixedBudgets.map((f) => (
+                                    <option key={f} value={f}>
+                                      {f}
+                                    </option>
+                                  ))}
+                                </select>
+                                {fixedBudget === "Custom Fixed Budget" && (
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. $ 15,000 Milestone based / Escrow protected"
+                                    value={customFixedBudget}
+                                    onChange={(e) => setCustomFixedBudget(capitalizeFirst(e.target.value))}
+                                    className="w-full rounded-md border border-primary/40 bg-background px-2.5 py-1 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* City */}
+                      {/* Product/Service Sample image (Upload option & auto compress under 150 kb) */}
                       <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          City <span className="text-rose-500">*</span>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1.5">
+                          Product / Service Sample Image to Understand
                         </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Mumbai / Delhi / Los Angeles"
-                          value={city}
-                          onChange={(e) => setCity(capitalizeWords(e.target.value))}
-                          className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                      </div>
-
-                      {/* Pin code */}
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          Pin Code / Postal Code <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. 110001 / 90001"
-                          value={pincode}
-                          onChange={(e) => setPincode(e.target.value)}
-                          className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
+                        <div className="rounded-lg border-2 border-dashed border-border/80 bg-background/50 p-6 text-center transition-colors hover:border-primary/50">
+                          {isCompressing ? (
+                            <div className="py-4 space-y-2">
+                              <div className="mx-auto size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                              <p className="text-xs font-medium text-foreground">
+                                Compressing image under 150 KB...
+                              </p>
+                            </div>
+                          ) : sampleImage ? (
+                            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+                              <img
+                                src={sampleImage.previewUrl}
+                                alt="Sample preview"
+                                className="size-16 rounded-md object-cover border border-border"
+                              />
+                              <div className="text-left text-xs">
+                                <p className="font-semibold text-foreground line-clamp-1">{sampleImage.name}</p>
+                                <p className="text-muted-foreground">Original: {sampleImage.originalSize}</p>
+                                <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                                  ✓ Auto compressed to {sampleImage.compressedSize} (Under 150 KB target)
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSampleImage(null)}
+                                className="text-rose-500 hover:text-rose-600"
+                              >
+                                <X className="size-4" /> Remove
+                              </Button>
+                            </div>
+                          ) : (
+                            <label className="cursor-pointer flex flex-col items-center justify-center">
+                              <UploadCloud className="size-8 text-muted-foreground mb-2" />
+                              <span className="text-sm font-medium text-foreground">
+                                Click to upload or drag and drop sample image
+                              </span>
+                              <span className="mt-1 text-xs text-muted-foreground">
+                                PNG, JPG, WEBP • Automatically compressed under 150 KB for faster agent review
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -1531,243 +1741,105 @@ export default function BuyersPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Card 4: Sourcing Scope, Description & Budget */}
-                  <Card className="border-border/60 bg-card/90 shadow-sm backdrop-blur-sm">
+                  {/* Card 4: Address Details */}
+                  <Card className="relative z-30 border-border/60 bg-card/90 shadow-sm backdrop-blur-sm">
                     <CardHeader className="border-b border-border/40 pb-4">
                       <div className="flex items-center gap-3">
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
-                          <FileText className="size-4" />
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                          <MapPin className="size-4" />
                         </span>
                         <div>
-                          <CardTitle className="text-lg">Detailed Sourcing Brief &amp; Budget</CardTitle>
-                         
-                         
+                          <CardTitle className="text-lg">Address &amp; Destination Details</CardTitle>
+
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-6 pt-6">
-                      {/* Looking for (Title with 70 characters max) */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label htmlFor={lookingForId} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Looking For (Role / Title) <span className="text-rose-500">*</span>
-                          </label>
-                          <span className={`text-xs ${lookingFor.length > 70 ? "text-rose-500 font-bold" : "text-muted-foreground"}`}>
-                            {lookingFor.length} / 70 characters
-                          </span>
-                        </div>
+                    <CardContent className="grid gap-5 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {/* Street Address */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Street Address <span className="text-rose-500">*</span>
+                        </label>
                         <input
-                          id={lookingForId}
                           type="text"
                           required
-                          maxLength={70}
-                          placeholder="e.g. Sourcing agent for EV battery cells / Buying agent for ceramic tiles"
-                          value={lookingFor}
-                          onChange={(e) => setLookingFor(capitalizeFirst(e.target.value))}
+                          placeholder="e.g. Unit 402, Trade Tower, Sector 62"
+                          value={streetAddress}
+                          onChange={(e) => setStreetAddress(capitalizeWords(e.target.value))}
                           className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] text-muted-foreground">Quick Suggestions:</span>
-                          {[
-                            "Sourcing Agent",
-                            "Buying Agent",
-                            "Quality Inspection Agent",
-                            "Factory Audit Specialist",
-                            "Freight & Forwarding",
-                          ].map((preset) => (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => setLookingFor(preset)}
-                              className={`rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
-                                lookingFor === preset
-                                  ? "border-primary bg-primary/10 text-primary font-medium"
-                                  : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-                              }`}
-                            >
-                              + {preset}
-                            </button>
-                          ))}
-                        </div>
-
                       </div>
 
-                      {/* Detailed Requirement (50 to 1000 characters) */}
+                      {/* Landmark */}
                       <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label htmlFor={detailedReqId} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Detailed Requirement <span className="text-rose-500">*</span>
-                          </label>
-                          <span
-                            className={`text-xs ${detailedRequirement.length < 50 && detailedRequirement.length > 0
-                                ? "text-amber-500 font-medium"
-                                : detailedRequirement.length > 1000
-                                  ? "text-rose-500 font-bold"
-                                  : "text-muted-foreground"
-                              }`}
-                          >
-                            {detailedRequirement.length} / 1000 characters (min 50)
-                          </span>
-                        </div>
-                        <textarea
-                          id={detailedReqId}
-                          rows={5}
-                          required
-                          minLength={50}
-                          maxLength={1000}
-                          placeholder="Specify product dimensions, materials, expected packaging, factory certifications, sample turnaround time, target unit pricing, and quality benchmarks..."
-                          value={detailedRequirement}
-                          onChange={(e) => setDetailedRequirement(capitalizeFirst(e.target.value))}
-                          className="w-full rounded-md border border-input bg-background p-3.5 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Landmark
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Near Metro Station / Port Gate"
+                          value={landmark}
+                          onChange={(e) => setLandmark(capitalizeWords(e.target.value))}
+                          className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
-                        {detailedRequirement.length > 0 && detailedRequirement.length < 50 && (
-                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                            Please provide at least {50 - detailedRequirement.length} more characters to ensure accurate matches.
-                          </p>
+                      </div>
+
+                      {/* Country */}
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Country <span className="text-rose-500">*</span>
+                        </label>
+                        <CountrySelect value={country} onChange={handleCountryChange} />
+                        {country === "Other Country" && (
+                          <div className="mt-2">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Enter your country name..."
+                              value={customCountry}
+                              onChange={(e) => setCustomCountry(capitalizeWords(e.target.value))}
+                              className="w-full rounded-md border border-primary/40 bg-background px-3 py-1.5 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
                         )}
                       </div>
 
-                      {/* Budget to hire sourcing agent (Hourly vs Fixed toggle) */}
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          Budget to Hire Sourcing Agent <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div
-                            onClick={() => setBudgetType("hourly")}
-                            className={`cursor-pointer rounded-lg border p-3.5 transition-all ${budgetType === "hourly"
-                                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                : "border-input bg-background hover:bg-muted/40"
-                              }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">Hourly Rate</span>
-                              <span className="text-xs text-muted-foreground">$ 5 / hr to $ 200 / hr</span>
-                            </div>
-                            {budgetType === "hourly" && (
-                              <div className="mt-3 space-y-2">
-                                <select
-                                  aria-label="Hourly Budget Range"
-                                  value={hourlyBudget}
-                                  onChange={(e) => setHourlyBudget(e.target.value)}
-                                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                                >
-                                  {hourlyBudgets.map((h) => (
-                                    <option key={h} value={h}>
-                                      {h}
-                                    </option>
-                                  ))}
-                                </select>
-                                {hourlyBudget === "Custom Hourly Rate" && (
-                                  <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. $ 250 / hr or Negotiable based on project"
-                                    value={customHourlyBudget}
-                                    onChange={(e) => setCustomHourlyBudget(capitalizeFirst(e.target.value))}
-                                    className="w-full rounded-md border border-primary/40 bg-background px-2.5 py-1 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                                  />
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          <div
-                            onClick={() => setBudgetType("fixed")}
-                            className={`cursor-pointer rounded-lg border p-3.5 transition-all ${budgetType === "fixed"
-                                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                : "border-input bg-background hover:bg-muted/40"
-                              }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">Fixed Project Fee</span>
-                              <span className="text-xs text-muted-foreground">$ 30 to $ 10,000</span>
-                            </div>
-                            {budgetType === "fixed" && (
-                              <div className="mt-3 space-y-2">
-                                <select
-                                  aria-label="Fixed Project Budget Range"
-                                  value={fixedBudget}
-                                  onChange={(e) => setFixedBudget(e.target.value)}
-                                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                                >
-                                  {fixedBudgets.map((f) => (
-                                    <option key={f} value={f}>
-                                      {f}
-                                    </option>
-                                  ))}
-                                </select>
-                                {fixedBudget === "Custom Fixed Budget" && (
-                                  <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. $ 15,000 Milestone based / Escrow protected"
-                                    value={customFixedBudget}
-                                    onChange={(e) => setCustomFixedBudget(capitalizeFirst(e.target.value))}
-                                    className="w-full rounded-md border border-primary/40 bg-background px-2.5 py-1 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                                  />
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Product/Service Sample image (Upload option & auto compress under 150 kb) */}
+                      {/* State / Province (Dynamic based on selected Country) */}
                       <div>
                         <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                          Product / Service Sample Image to Understand
+                          State / Province <span className="text-rose-500">*</span>
                         </label>
-                        <div className="rounded-lg border-2 border-dashed border-border/80 bg-background/50 p-6 text-center transition-colors hover:border-primary/50">
-                          {isCompressing ? (
-                            <div className="py-4 space-y-2">
-                              <div className="mx-auto size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                              <p className="text-xs font-medium text-foreground">
-                                Compressing image under 150 KB...
-                              </p>
-                            </div>
-                          ) : sampleImage ? (
-                            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-                              <img
-                                src={sampleImage.previewUrl}
-                                alt="Sample preview"
-                                className="size-16 rounded-md object-cover border border-border"
-                              />
-                              <div className="text-left text-xs">
-                                <p className="font-semibold text-foreground line-clamp-1">{sampleImage.name}</p>
-                                <p className="text-muted-foreground">Original: {sampleImage.originalSize}</p>
-                                <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                                  ✓ Auto compressed to {sampleImage.compressedSize} (Under 150 KB target)
-                                </p>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setSampleImage(null)}
-                                className="text-rose-500 hover:text-rose-600"
-                              >
-                                <X className="size-4" /> Remove
-                              </Button>
-                            </div>
-                          ) : (
-                            <label className="cursor-pointer flex flex-col items-center justify-center">
-                              <UploadCloud className="size-8 text-muted-foreground mb-2" />
-                              <span className="text-sm font-medium text-foreground">
-                                Click to upload or drag and drop sample image
-                              </span>
-                              <span className="mt-1 text-xs text-muted-foreground">
-                                PNG, JPG, WEBP • Automatically compressed under 150 KB for faster agent review
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="hidden"
-                              />
-                            </label>
-                          )}
-                        </div>
+                        <StateSelect country={country} value={state} onChange={(val) => setState(val)} />
+                      </div>
+
+                      {/* City */}
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                          City <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Mumbai / Delhi / Los Angeles"
+                          value={city}
+                          onChange={(e) => setCity(capitalizeWords(e.target.value))}
+                          className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
+
+                      {/* Pin code */}
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Pin Code / Postal Code <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 110001 / 90001"
+                          value={pincode}
+                          onChange={(e) => setPincode(e.target.value)}
+                          className="w-full rounded-md border border-input bg-background px-3.5 py-2 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -1826,25 +1898,16 @@ export default function BuyersPage() {
 
                   {/* Submit CTA */}
                   <div className="pt-2 text-center">
-                    <p className="mb-3 text-sm font-semibold text-foreground">
-                      One-time verification fee due at checkout: US${country.trim().toLowerCase() === "india" ? "15" : "20"}. No recurring charge.
-                    </p>
                     <Button
                       size="lg"
                       type="submit"
                       disabled={
-                        isSubmitting ||
-                        !emailVerified ||
-                        (requiresWhatsappVerification && !whatsappVerified) ||
-                        Boolean(emailRegistrationWarning || whatsappRegistrationWarning)
+                        isSubmitting
                       }
                       className="w-full sm:w-auto px-10 py-6 text-base font-semibold shadow-md"
                     >
-                      <Search className="size-5 mr-1" /> {isSubmitting ? "Saving..." : "Continue to Verification Payment"}
+                      <Search className="size-5 mr-1" /> {isSubmitting ? "Saving..." : "Continue"}
                     </Button>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Your form will be submitted for review only after successful payment.
-                    </p>
                   </div>
                 </form>
               )}

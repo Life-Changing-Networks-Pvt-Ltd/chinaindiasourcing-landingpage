@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useId, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -575,6 +576,7 @@ interface CertificateItem {
 }
 
 export default function SellersPage() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Opening Question State (Role & Sourcing Specialization)
@@ -624,6 +626,7 @@ export default function SellersPage() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [emailVerificationToken, setEmailVerificationToken] = useState("");
   const [emailRegistrationWarning, setEmailRegistrationWarning] = useState("");
+  const [marketApplicationId, setMarketApplicationId] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
   const [customCountryCode, setCustomCountryCode] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -979,7 +982,7 @@ export default function SellersPage() {
   const buildPayload = (): Record<string, unknown> => ({
     selectedRoles, selectedSourcingTypes, titleOfServices, chargeType, hourlyCharge,
     customHourlyCharge, fixedCharge, customFixedCharge, companyName, legalBusinessName,
-    businessRole, aboutCompany, yearOfEstablishment, contactName, jobTitle, email,
+    businessRole, aboutCompany, yearOfEstablishment, contactName, jobTitle, email, marketApplicationId,
     emailVerified, emailVerificationToken, countryCode, customCountryCode, whatsapp,
     whatsappVerified, whatsappVerificationToken, website, streetAddress, locationLandmark,
     country, customCountry, state, city, pincode, products, targetRegions, customRegion,
@@ -1035,7 +1038,7 @@ export default function SellersPage() {
           if (result.data) {
             draftCredentials.current = { draftId: result.data.draftId, draftToken: result.data.draftToken };
             sessionStorage.setItem("market-sellers-draft", JSON.stringify(draftCredentials.current));
-            setDraftMessage("Draft saved");
+            setDraftMessage("");
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unable to save draft.";
@@ -1141,8 +1144,13 @@ export default function SellersPage() {
         ...draftCredentials.current,
       });
       if (!result.data) throw new Error("Payment details were not returned.");
-      setPaymentDetails(result.data);
-      window.scrollTo({ top: 120, behavior: "smooth" });
+      sessionStorage.setItem(
+        "market_payment_data",
+        JSON.stringify({ form: "sellers", payment: result.data }),
+      );
+      router.push(
+        `/payments?form=sellers&id=${result.data.applicationId}&token=${encodeURIComponent(result.data.accessToken)}`,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit the form. Please try again.";
       const requestError = error as Error & {
@@ -1935,6 +1943,9 @@ export default function SellersPage() {
                             </div>
                             <OtpVerificationButton
                               channel="email"
+                              marketForm="sellers"
+                              marketApplicationId={marketApplicationId}
+                              onMarketApplicationCreated={setMarketApplicationId}
                               target={email.trim().toLowerCase()}
                               verified={emailVerified}
                               onVerified={(token) => {
@@ -2009,6 +2020,8 @@ export default function SellersPage() {
                             {requiresWhatsappVerification ? (
                               <OtpVerificationButton
                                 channel="whatsapp"
+                                marketForm="sellers"
+                                marketApplicationId={marketApplicationId}
                                 target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
                                 verified={whatsappVerified}
                                 onVerified={(token) => {
@@ -3278,11 +3291,6 @@ export default function SellersPage() {
                   )}
 
                   {/* Step Navigation Controls */}
-                  {currentStep === formSteps.length && (
-                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center text-sm">
-                      <strong>One-time verification fee:</strong> US${country.trim().toLowerCase() === "india" ? "15" : "20"}. This is charged at checkout and does not recur.
-                    </div>
-                  )}
                   <div className="flex items-center justify-between pt-2">
                     <Button
                       type="button"
@@ -3324,7 +3332,7 @@ export default function SellersPage() {
                         }
                         className="px-8 py-5 text-sm sm:text-base font-semibold shadow-md gap-2"
                       >
-                        <CheckCircle2 className="size-5" /> {isSubmitting ? "Saving..." : "Continue to Verification Payment"}
+                        <CheckCircle2 className="size-5" /> {isSubmitting ? "Saving..." : "Continue"}
                       </Button>
                     )}
                   </div>
