@@ -14,6 +14,7 @@ import { MarketVerificationPayment } from "@/components/market-verification-paym
 import {
   type MarketForm,
   type MarketPaymentDetails,
+  checkMarketRegistration,
   refreshMarketPayment,
 } from "@/lib/api";
 
@@ -44,7 +45,6 @@ function PaymentsContent() {
           if (parsed?.payment) {
             setForm(parsed.form || formParam);
             setPayment(parsed.payment);
-            setIsLoading(false);
 
             // Refresh latest order/pricing from backend
             try {
@@ -57,8 +57,26 @@ function PaymentsContent() {
                 );
               }
             } catch {
-              // Keep active session payment if refresh fails
+              // A registration-status check can rotate the short-lived payment
+              // token. Recover the latest pending session by verified form/email.
+              if (parsed.payment.email) {
+                const recovered = await checkMarketRegistration(
+                  parsed.form || formParam,
+                  parsed.payment.email,
+                );
+                if (!cancelled && recovered.data?.payment) {
+                  setPayment(recovered.data.payment);
+                  sessionStorage.setItem(
+                    "market_payment_data",
+                    JSON.stringify({
+                      form: parsed.form || formParam,
+                      payment: recovered.data.payment,
+                    }),
+                  );
+                }
+              }
             }
+            if (!cancelled) setIsLoading(false);
             return;
           }
         }

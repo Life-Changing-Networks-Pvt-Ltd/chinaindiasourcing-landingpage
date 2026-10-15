@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 type PageMetadata = Pick<Metadata, "title" | "description">;
 
 export const homeSpreadsheetMetadata: PageMetadata = {
-  title: "China Sourcing Agent | Indian China Buying/Import Agent",
+  title: "China Sourcing Agent Platform | India Global B2B Sourcing Services Marketplace",
   description:
-    "We are one of the best China sourcing agents, helping global importers get high-quality products at competitive prices—from factory verification to door-to-door delivery. Contact us today.",
+    "ChinaIndiaSourcing.com is a leading B2B platform that brings together sourcing agents and companies from around the world, offering a wide range of products and services. Buyers can connect directly with sourcing agents to meet their requirements with ease. Our top sourcing countries are China, India and Vietnam, while our main buyers come from the USA, UK, India and beyond.",
 };
 
 // Global / Default spreadsheet rows. The final page slug is matched without

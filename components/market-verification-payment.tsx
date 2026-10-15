@@ -78,7 +78,10 @@ export function MarketVerificationPayment({ form, payment, onPaid }: {
     let cancelled = false;
     void refreshMarketPayment(form, payment)
       .then((result) => {
-        if (!cancelled && result.data) setActivePayment(normalizeLegacyIndianPayment(result.data));
+        if (!cancelled && result.data) {
+          setActivePayment(normalizeLegacyIndianPayment(result.data));
+          setError("");
+        }
       })
       .catch((refreshError) => {
         if (!cancelled) {
@@ -96,10 +99,16 @@ export function MarketVerificationPayment({ form, payment, onPaid }: {
   const openPayment = async () => {
     setError(""); setMessage(""); setIsPaying(true);
     try {
-      const refreshed = await refreshMarketPayment(form, payment);
+      const refreshed = await refreshMarketPayment(form, activePayment);
       if (!refreshed.data) throw new Error("Updated payment order was not returned.");
       const checkoutPayment = refreshed.data;
       setActivePayment(normalizeLegacyIndianPayment(checkoutPayment));
+      if (
+        checkoutPayment.contact.startsWith("+91") &&
+        checkoutPayment.currency !== "INR"
+      ) {
+        throw new Error("Indian payments must be processed in INR. Please refresh and try again.");
+      }
       await loadRazorpay();
       if (!window.Razorpay) throw new Error("Payment checkout is unavailable.");
       const checkout = new window.Razorpay({
@@ -110,6 +119,35 @@ export function MarketVerificationPayment({ form, payment, onPaid }: {
         name: "Chinaindiasourcing",
         description: "Registration payment",
         prefill: { name: checkoutPayment.name, email: checkoutPayment.email, contact: checkoutPayment.contact },
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true,
+          paylater: true,
+          emi: true,
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: { name: "UPI", instruments: [{ method: "upi" }] },
+              cards: { name: "Cards", instruments: [{ method: "card" }] },
+              banks: { name: "Netbanking", instruments: [{ method: "netbanking" }] },
+              wallets: { name: "Wallets", instruments: [{ method: "wallet" }] },
+              paylater: { name: "Pay Later", instruments: [{ method: "paylater" }] },
+              emi: { name: "EMI", instruments: [{ method: "emi" }] },
+            },
+            sequence: [
+              "block.upi",
+              "block.cards",
+              "block.banks",
+              "block.wallets",
+              "block.paylater",
+              "block.emi",
+            ],
+            preferences: { show_default_blocks: false },
+          },
+        },
         theme: { color: "#111827" },
         modal: { ondismiss: () => setIsPaying(false) },
         handler: async (result: RazorpayResult) => {

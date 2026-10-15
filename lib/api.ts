@@ -129,6 +129,24 @@ export type MarketPaymentDetails = {
   contact: string;
 };
 
+export type MarketRegistrationStatus = {
+  status: "available" | "pending_payment" | "paid";
+  payment?: MarketPaymentDetails;
+};
+
+export async function checkMarketRegistration(
+  form: MarketForm,
+  email: string,
+  marketApplicationId?: string,
+) {
+  const response = await fetch(`${apiBaseUrl}/market/${form}/registration-status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, marketApplicationId }),
+  });
+  return readApiResult<MarketRegistrationStatus>(response);
+}
+
 export async function saveMarketDraft(
   form: MarketForm,
   payload: Record<string, unknown>,

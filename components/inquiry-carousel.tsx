@@ -9,6 +9,7 @@ import {
   Mail,
   PackageSearch,
   Phone,
+  BadgeCheck,
   UserRound,
 } from "lucide-react";
 
@@ -32,7 +33,7 @@ import {
 import inquiryData from "@/data/inquiries.json";
 
 export type Inquiry = {
-  id: number;
+  id: number | string;
   timestamp: string;
   name: string;
   email: string;
@@ -47,6 +48,10 @@ export type Inquiry = {
   dealingStatus: string;
   website: string;
   importFrom: string;
+  country?: string;
+  paymentSuccessful?: boolean;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
 };
 
 const cardTones = [
@@ -123,8 +128,20 @@ const companyFallbackImages = [
 
 function CompanyMark({ inquiry }: { inquiry: Inquiry }) {
   const name = companyName(inquiry);
+  const isLiveRegistration = typeof inquiry.id === "string";
+  if (isLiveRegistration) {
+    return (
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-white/70 bg-white/80 text-blue-700 shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-blue-300">
+        <Building2 className="size-6" aria-hidden="true" />
+        <span className="sr-only">No company logo provided</span>
+      </span>
+    );
+  }
   const hostname = companyWebsiteHost(inquiry.website);
-  const fallbackSrc = companyFallbackImages[(inquiry.id - 1) % companyFallbackImages.length];
+  const fallbackIndex = typeof inquiry.id === "number"
+    ? Math.max(0, inquiry.id - 1)
+    : inquiry.id.split("").reduce((sum, character) => sum + character.charCodeAt(0), 0);
+  const fallbackSrc = companyFallbackImages[fallbackIndex % companyFallbackImages.length];
   const logoSrc = hostname
     ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=128`
     : fallbackSrc;
@@ -170,6 +187,7 @@ function sourceCountry(value: string) {
 }
 
 function buyerCountry(inquiry: Inquiry) {
+  if (inquiry.country?.trim()) return inquiry.country.trim();
   const address = inquiry.address.toLowerCase();
   const contact = `${inquiry.mobile} ${inquiry.whatsapp}`.replace(/[^0-9+]/g, "");
 
@@ -286,7 +304,11 @@ function InquirySummaryCard({
               </span>
             </div>
           </div>
-          <span className="shrink-0 text-sm font-medium text-muted-foreground">#{String(inquiry.id).padStart(3, "0")}</span>
+          {typeof inquiry.id === "number" && (
+            <span className="shrink-0 text-sm font-medium text-muted-foreground">
+              #{String(inquiry.id).padStart(3, "0")}
+            </span>
+          )}
         </div>
 
         <div className="mb-4 flex min-w-0 items-center gap-3">
@@ -296,6 +318,14 @@ function InquirySummaryCard({
             <p className="truncate font-semibold" title={companyName(inquiry)}>{companyName(inquiry)}</p>
           </div>
         </div>
+
+        {(inquiry.paymentSuccessful || inquiry.emailVerified || inquiry.phoneVerified) && (
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {inquiry.paymentSuccessful && <Badge className="bg-emerald-600 text-white hover:bg-emerald-600"><BadgeCheck /> Payment Verified</Badge>}
+            {inquiry.emailVerified && <Badge variant="secondary"><Mail /> Email Verified</Badge>}
+            {inquiry.phoneVerified && <Badge variant="secondary"><Phone /> Phone Verified</Badge>}
+          </div>
+        )}
 
         <dl className="space-y-3">
           <div className="flex items-start gap-3">
@@ -324,16 +354,31 @@ export function InquiryCarousel({
   inquiries = inquiryData as Inquiry[],
   layout = "carousel",
   limit,
+  includeLive = false,
 }: {
   inquiries?: Inquiry[];
   layout?: "carousel" | "grid";
   limit?: number;
+  includeLive?: boolean;
 }) {
   const [selected, setSelected] = React.useState<Inquiry | null>(null);
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi>();
   const carouselRoot = React.useRef<HTMLDivElement>(null);
   const wheelLocked = React.useRef(false);
-  const visibleInquiries = typeof limit === "number" ? inquiries.slice(0, limit) : inquiries;
+  const [liveInquiries, setLiveInquiries] = React.useState<Inquiry[]>([]);
+  const mergedInquiries = includeLive ? [...liveInquiries, ...inquiries] : inquiries;
+  const visibleInquiries = typeof limit === "number" ? mergedInquiries.slice(0, limit) : mergedInquiries;
+
+  React.useEffect(() => {
+    if (!includeLive) return;
+    let cancelled = false;
+    const apiBase = String(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1").replace(/\/+$/, "");
+    void fetch(`${apiBase}/market/directory/buyers?limit=${limit || 12}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Unable to load buyers")))
+      .then((result) => { if (!cancelled && Array.isArray(result?.data)) setLiveInquiries(result.data); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [includeLive, limit]);
 
   React.useEffect(() => {
     const viewport = carouselRoot.current?.querySelector<HTMLElement>(

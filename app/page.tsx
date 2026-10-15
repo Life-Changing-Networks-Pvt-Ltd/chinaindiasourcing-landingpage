@@ -207,7 +207,7 @@ export default function Home() {
               {Math.min(12, inquiryData.length)} requests shown
             </Badge>
           </div>
-          <InquiryCarousel layout="grid" limit={12} />
+          <InquiryCarousel layout="grid" limit={12} includeLive />
           <div className="mt-8 flex justify-center">
             <Button size="lg" asChild>
               <Link href={routePath.buyers}>

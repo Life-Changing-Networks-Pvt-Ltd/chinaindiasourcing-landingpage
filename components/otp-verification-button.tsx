@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Loader2, Mail, MessageCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Check, CreditCard, Loader2, Mail, MessageCircle, RotateCcw, ShieldCheck } from "lucide-react";
 
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  checkMarketRegistration,
+  type MarketPaymentDetails,
   type OtpChannel,
   type MarketForm,
   sendVerificationOtp,
@@ -59,6 +62,7 @@ export function OtpVerificationButton({
   marketApplicationId,
   onMarketApplicationCreated,
 }: OtpVerificationButtonProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -68,6 +72,8 @@ export function OtpVerificationButton({
   const [resendTimer, setResendTimer] = useState(0);
   const [otpTarget, setOtpTarget] = useState("");
   const [resolvedApplicationId, setResolvedApplicationId] = useState(marketApplicationId || "");
+  const [pendingPayment, setPendingPayment] = useState<MarketPaymentDetails | null>(null);
+  const [checkingRegistration, setCheckingRegistration] = useState(false);
 
   const verificationStorageKey = marketForm
     ? `market-${marketForm}-${channel}-verification`
@@ -117,7 +123,7 @@ export function OtpVerificationButton({
     return () => window.clearInterval(timerId);
   }, [resendTimer]);
 
-  const sendOtp = async () => {
+  const sendOtp = async (applicationIdOverride?: string) => {
     setError("");
     if (!isValidTarget(channel, target)) {
       setError(
@@ -134,7 +140,7 @@ export function OtpVerificationButton({
         channel,
         target,
         marketForm,
-        resolvedApplicationId || marketApplicationId,
+        applicationIdOverride || resolvedApplicationId || marketApplicationId,
       );
       if (result.marketApplicationId) {
         setResolvedApplicationId(result.marketApplicationId);
@@ -160,7 +166,7 @@ export function OtpVerificationButton({
     }
   };
 
-  const startVerification = () => {
+  const startVerification = async () => {
     if (!target || !target.trim()) {
       alert(
         channel === "email"
@@ -185,10 +191,55 @@ export function OtpVerificationButton({
       setError("");
       setResendTimer(0);
     }
-    setOpen(true);
-    if (otpTarget !== target || !otpSent) {
-      void sendOtp();
+    if (channel === "email" && marketForm) {
+      try {
+        setCheckingRegistration(true);
+        const result = await checkMarketRegistration(
+          marketForm,
+          target,
+          resolvedApplicationId || marketApplicationId,
+        );
+        if (result.data?.status === "pending_payment" && result.data.payment) {
+          onAvailabilityChange?.(true);
+          setPendingPayment(result.data.payment);
+          return;
+        }
+        if (result.data?.status === "paid") {
+          onAvailabilityChange?.(false, "This email address is already registered and payment is complete.");
+          return;
+        }
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : "Unable to check registration status.");
+        setOpen(true);
+        return;
+      } finally {
+        setCheckingRegistration(false);
+      }
     }
+    setOpen(true);
+    if (otpTarget !== target || !otpSent) void sendOtp();
+  };
+
+  const continueToPayment = () => {
+    if (!pendingPayment || !marketForm) return;
+    window.sessionStorage.setItem(
+      "market_payment_data",
+      JSON.stringify({ form: marketForm, payment: pendingPayment }),
+    );
+    router.push(
+      `/payments?form=${marketForm}&id=${pendingPayment.applicationId}&token=${encodeURIComponent(pendingPayment.accessToken)}`,
+    );
+  };
+
+  const fillAgain = () => {
+    if (!pendingPayment) return;
+    const applicationId = pendingPayment.applicationId;
+    setResolvedApplicationId(applicationId);
+    onMarketApplicationCreated?.(applicationId);
+    onAvailabilityChange?.(true);
+    setPendingPayment(null);
+    setOpen(true);
+    window.setTimeout(() => void sendOtp(applicationId), 0);
   };
 
   const verifyOtp = async () => {
@@ -250,7 +301,7 @@ export function OtpVerificationButton({
         size="sm"
         variant={verified ? verifiedVariant : "outline"}
         onClick={startVerification}
-        disabled={verified || !hasTarget}
+        disabled={verified || !hasTarget || checkingRegistration}
         title={
           verified
             ? "Already verified"
@@ -262,7 +313,9 @@ export function OtpVerificationButton({
         }
         className={className}
       >
-        {verified ? (
+        {checkingRegistration ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : verified ? (
           <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
             <Check className="size-3.5" /> Verified
           </span>
@@ -335,6 +388,58 @@ export function OtpVerificationButton({
               ) : (
                 "Verify OTP"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingPayment)} onOpenChange={(nextOpen) => !nextOpen && setPendingPayment(null)}>
+        <DialogContent
+          className="overflow-hidden border-0 p-0 shadow-2xl sm:max-w-[500px]"
+          overlayClassName="bg-slate-950/60 backdrop-blur-[2px]"
+        >
+          <div className="h-1.5 bg-gradient-to-r from-amber-400 via-orange-400 to-primary" />
+          <DialogHeader className="gap-0 px-6 pb-0 pt-6 text-left sm:px-8 sm:pt-8">
+            <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 ring-8 ring-amber-50 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/5">
+              <CreditCard className="size-7" />
+            </div>
+            <DialogTitle className="text-2xl font-semibold tracking-tight sm:text-[26px]">
+              Your profile is ready
+            </DialogTitle>
+            <DialogDescription className="mt-2 text-[15px] leading-6">
+              Your profile is complete, but the verification payment is still pending.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mx-6 flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/80 p-4 dark:border-amber-500/20 dark:bg-amber-500/10 sm:mx-8">
+            <ShieldCheck className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">No need to create a new profile</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Continue to your receipt to complete payment, or reopen the form if you need to change any details first.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3 border-t bg-muted/30 px-6 py-5 sm:flex-row sm:px-8">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={fillAgain}
+              className="h-11 flex-1 rounded-lg bg-background"
+            >
+              <RotateCcw className="size-4" />
+              Fill Again
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              onClick={continueToPayment}
+              className="h-11 flex-1 rounded-lg shadow-md shadow-primary/20"
+            >
+              Go to Payment
+              <ArrowRight className="size-4" />
             </Button>
           </DialogFooter>
         </DialogContent>

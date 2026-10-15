@@ -26,6 +26,9 @@ type SellerProfile = {
   address?: string;
   countries?: string[];
   verified: boolean;
+  paymentVerified?: boolean;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   about?: string;
   services?: string[];
   turnaroundTime?: string;
@@ -141,7 +144,6 @@ function maskPhone(value: string) {
 }
 
 function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; onEnquire: (seller: SellerProfile) => void; onSelect: (seller: SellerProfile) => void }) {
-  const website = websiteUrl(seller.website);
   const tags = seller.services || [];
   const initials = (seller.companyName || seller.name || "S").slice(0, 1).toUpperCase();
   const countries = seller.countries?.length ? seller.countries : [seller.country];
@@ -181,7 +183,11 @@ function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; on
                 : <span key={country} role="img" aria-label={`${country} flag`} title={country} className="text-base leading-none">{countryFlagEmoji(country)}</span>;
             })}
           </div>
-          {seller.verified ? (
+          {seller.paymentVerified ? (
+            <Badge className="shrink-0 border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-600">
+              <BadgeCheck className="size-3.5" aria-hidden="true" /> Payment Verified
+            </Badge>
+          ) : seller.verified ? (
             <Badge className="shrink-0 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
               <BadgeCheck className="size-3.5" aria-hidden="true" /> Verified
             </Badge>
@@ -193,6 +199,13 @@ function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; on
           </div>
         </div>
 
+        {(seller.emailVerified || seller.phoneVerified) && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {seller.emailVerified && <Badge variant="secondary"><Mail className="size-3.5" /> Email Verified</Badge>}
+            {seller.phoneVerified && <Badge variant="secondary"><Phone className="size-3.5" /> Phone Verified</Badge>}
+          </div>
+        )}
+
         <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <span>{countries.join(" / ") || "China"}</span>
           {seller.city ? <><span aria-hidden="true">•</span><span className="truncate">{seller.city}</span></> : null}
@@ -201,7 +214,7 @@ function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; on
         <div className="mt-4">
           {seller.title ? <h4 className="line-clamp-2 min-h-12 text-lg font-bold leading-snug">{seller.title}</h4> : null}
           <p className={`${seller.title ? "mt-2" : ""} line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground`}>
-            {seller.about || "Review this seller’s services, location, and experience before sending an enquiry."}
+            Deals in: {seller.about || "Review this seller’s services, location, and experience before sending an enquiry."}
           </p>
         </div>
 
@@ -226,13 +239,16 @@ function SellerCard({ seller, onEnquire, onSelect }: { seller: SellerProfile; on
         </div>
 
         <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
-          {website ? (
-            <Button asChild variant="outline">
-              <a onClick={(event) => event.stopPropagation()} href={website} target="_blank" rel="noreferrer"><Eye className="size-4" aria-hidden="true" /> Details</a>
-            </Button>
-          ) : (
-            <Button variant="outline" disabled title="Website not added by this seller"><Eye className="size-4" aria-hidden="true" /> Details</Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect(seller);
+            }}
+          >
+            <Eye className="size-4" aria-hidden="true" /> Details
+          </Button>
           <Button onClick={(event) => { event.stopPropagation(); onEnquire(seller); }}><Send className="size-4" aria-hidden="true" /> Enquire</Button>
         </div>
       </CardContent>
@@ -377,25 +393,23 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
 
   React.useEffect(() => {
     const spreadsheetResults = spreadsheetSellersFor(countryName);
-    if (spreadsheetResults) {
-      setSellers(spreadsheetResults);
-      setLoading(false);
-      return;
-    }
     const controller = new AbortController();
-    const params = new URLSearchParams({ country: countryName, limit: "12" });
+    const params = new URLSearchParams({ limit: "12" });
+    if (countryName.trim().toLowerCase() !== "all") params.set("country", countryName);
     void fetch(`${apiBaseUrl}/market/directory/sellers?${params}`, { signal: controller.signal })
       .then(async (response) => {
         const result = await response.json() as SellerResponse;
         if (!response.ok || !result.success) throw new Error("Unable to load sellers");
-        setSellers((result.data || []).filter((seller) => {
-          const website = String(seller.website || "").trim().toLowerCase();
-          return website && !website.includes(".example");
-        }).slice(0, 12));
+        const liveSellers = result.data || [];
+        const liveIds = new Set(liveSellers.map((seller) => seller.id));
+        setSellers([
+          ...liveSellers,
+          ...(spreadsheetResults || []).filter((seller) => !liveIds.has(seller.id)),
+        ]);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setSellers([]);
+        setSellers(spreadsheetResults || []);
       })
       .finally(() => setLoading(false));
     return () => controller.abort();

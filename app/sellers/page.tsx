@@ -117,9 +117,8 @@ const countryStates: Record<string, string[]> = {
   Taiwan: ["Taipei City", "New Taipei City", "Taichung City", "Kaohsiung City", "Tainan City", "Taoyuan City", "Hsinchu City"],
 };
 
-// 6 Primary Roles
+// Seller and sourcing-partner roles
 export const PRIMARY_ROLES: string[] = [
-  "Buyer / Importer",
   "Manufacturer",
   "Supplier / Trader",
   "Exporter",
@@ -1066,13 +1065,13 @@ export default function SellersPage() {
     return draftQueue.current;
   };
 
-  const goToStep = async (step: number) => {
-    await saveDraft(step, true);
+  const goToStep = (step: number) => {
     setCurrentStep(step);
     window.scrollTo({ top: 120, behavior: "smooth" });
+    void saveDraft(step, true);
   };
 
-  const handleNextStep = async () => {
+  const handleNextStep = () => {
     if (emailRegistrationWarning || whatsappRegistrationWarning) return;
     if (currentStep === 1) {
       if (!titleOfServices.trim()) {
@@ -1107,16 +1106,16 @@ export default function SellersPage() {
       }
     }
     const nextStep = Math.min(currentStep + 1, formSteps.length);
-    await saveDraft(nextStep, true);
     setCurrentStep(nextStep);
     window.scrollTo({ top: 120, behavior: "smooth" });
+    void saveDraft(nextStep, true);
   };
 
-  const handlePrevStep = async () => {
+  const handlePrevStep = () => {
     const previousStep = Math.max(currentStep - 1, 1);
-    await saveDraft(previousStep, true);
     setCurrentStep(previousStep);
     window.scrollTo({ top: 120, behavior: "smooth" });
+    void saveDraft(previousStep, true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1299,7 +1298,7 @@ export default function SellersPage() {
                     <div className="flex-1 flex items-center min-w-0">
                       {selectedRoles.length === 0 ? (
                         <span className="text-xs sm:text-sm text-muted-foreground font-normal truncate">
-                          Click to choose your role (Buyer / Importer, Manufacturer, Supplier...)...
+                          Click to choose your role (Manufacturer, Supplier, Exporter...)...
                         </span>
                       ) : (
                         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
