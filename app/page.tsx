@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/card";
 import { countryAlternates } from "@/lib/seo";
 import { homeSpreadsheetMetadata } from "@/lib/spreadsheet-metadata";
-import inquiryData from "@/data/inquiries.json";
 import { services, sourceCountries } from "@/lib/services";
 import { routePath } from "@/url";
 
@@ -204,7 +203,7 @@ export default function Home() {
               </p>
             </div>
             <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">
-              {Math.min(12, inquiryData.length)} requests shown
+              Live requests
             </Badge>
           </div>
           <InquiryCarousel layout="grid" limit={12} includeLive />

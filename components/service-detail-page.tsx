@@ -17,7 +17,6 @@ import { TopSellersListing } from "@/components/top-sellers-listing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import inquiryData from "@/data/inquiries.json";
 import type { BuyerMarket } from "@/lib/markets";
 import {
   getSourceCountry,
@@ -396,7 +395,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Recent Buyers Leads for Sourcing</h2>
               <p className="mt-4 text-base leading-7 text-muted-foreground">Worldwide buyers who want to source from the {service.origin} market</p>
             </div>
-            <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">{Math.min(12, inquiryData.length)} requests shown</Badge>
+            <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">Live requests</Badge>
           </div>
           <InquiryCarousel layout="grid" limit={12} />
           <div className="mt-8 flex justify-center">

@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { routePath } from "@/url";
-import spreadsheetSellers from "@/data/sourcing-agents.json";
 
 type SellerProfile = {
   id: string;
@@ -37,23 +36,11 @@ type SellerProfile = {
 
 type SellerResponse = { success: boolean; data?: SellerProfile[] };
 
-const sourcingDirectory = spreadsheetSellers as SellerProfile[];
 const SELLERS_PER_PAGE = 12;
 
 const apiBaseUrl = String(
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1",
 ).replace(/\/+$/, "");
-
-function spreadsheetSellersFor(countryName: string) {
-  const country = countryName.trim().toLowerCase();
-  if (country === "all") return sourcingDirectory;
-  if (country === "china" || country === "india") {
-    return sourcingDirectory.filter((seller) =>
-      (seller.countries || [seller.country]).some((value) => value.toLowerCase() === country),
-    );
-  }
-  return null;
-}
 
 function countryFlag(countryName: string) {
   const countryFlags: Record<string, string> = {
@@ -379,12 +366,11 @@ function EnquiryForm({ seller, onClose }: { seller: SellerProfile | null; onClos
 }
 
 export function TopSellersListing({ countryName }: { countryName: string }) {
-  const localSellers = spreadsheetSellersFor(countryName);
   const isCombinedDirectory = countryName.trim().toLowerCase() === "all";
-  const [sellers, setSellers] = React.useState<SellerProfile[]>(() => localSellers || []);
+  const [sellers, setSellers] = React.useState<SellerProfile[]>([]);
   const [selected, setSelected] = React.useState<SellerProfile | null>(null);
   const [selectedDetails, setSelectedDetails] = React.useState<SellerProfile | null>(null);
-  const [loading, setLoading] = React.useState(localSellers === null);
+  const [loading, setLoading] = React.useState(true);
   const [visibleSellerCount, setVisibleSellerCount] = React.useState(SELLERS_PER_PAGE);
 
   React.useEffect(() => {
@@ -392,24 +378,19 @@ export function TopSellersListing({ countryName }: { countryName: string }) {
   }, [countryName]);
 
   React.useEffect(() => {
-    const spreadsheetResults = spreadsheetSellersFor(countryName);
     const controller = new AbortController();
-    const params = new URLSearchParams({ limit: "12" });
+    setLoading(true);
+    const params = new URLSearchParams({ limit: "200" });
     if (countryName.trim().toLowerCase() !== "all") params.set("country", countryName);
     void fetch(`${apiBaseUrl}/market/directory/sellers?${params}`, { signal: controller.signal })
       .then(async (response) => {
         const result = await response.json() as SellerResponse;
         if (!response.ok || !result.success) throw new Error("Unable to load sellers");
-        const liveSellers = result.data || [];
-        const liveIds = new Set(liveSellers.map((seller) => seller.id));
-        setSellers([
-          ...liveSellers,
-          ...(spreadsheetResults || []).filter((seller) => !liveIds.has(seller.id)),
-        ]);
+        setSellers(result.data || []);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setSellers(spreadsheetResults || []);
+        setSellers([]);
       })
       .finally(() => setLoading(false));
     return () => controller.abort();

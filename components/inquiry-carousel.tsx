@@ -30,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import inquiryData from "@/data/inquiries.json";
 
 export type Inquiry = {
   id: number | string;
@@ -351,10 +350,10 @@ function InquirySummaryCard({
 }
 
 export function InquiryCarousel({
-  inquiries = inquiryData as Inquiry[],
+  inquiries = [],
   layout = "carousel",
   limit,
-  includeLive = false,
+  includeLive = true,
 }: {
   inquiries?: Inquiry[];
   layout?: "carousel" | "grid";

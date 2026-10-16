@@ -30,7 +30,6 @@ import {
 import { CountryTypewriter } from "@/components/ui/country-typewriter";
 import { World, type GlobePosition } from "@/components/ui/globe-client";
 import { Separator } from "@/components/ui/separator";
-import inquiryData from "@/data/inquiries.json";
 import { sourceCountries } from "@/lib/services";
 import { routePath } from "@/url";
 
@@ -180,7 +179,7 @@ export function SourcePageIntro({ title, showHomepageSections }: SourcePageIntro
               <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Explore active sourcing enquiries</h2>
               <p className="mt-4 text-base leading-7 text-muted-foreground">Browse recent buyer requests and open a card to review the complete sourcing requirement.</p>
             </div>
-            <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">{inquiryData.length} requests</Badge>
+            <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">Live requests</Badge>
           </div>
           <InquiryCarousel />
         </div>

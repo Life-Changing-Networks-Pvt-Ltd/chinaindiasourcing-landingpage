@@ -23,6 +23,9 @@ function PaymentsContent() {
   const formParam = (searchParams.get("form") as MarketForm) || "buyers";
   const idParam = searchParams.get("id") || "";
   const tokenParam = searchParams.get("token") || "";
+  const returnUrlParam = searchParams.get("return_url") || "";
+  const allowedReturnOrigins = ["http://localhost:3002", process.env.NEXT_PUBLIC_CIS_DASHBOARD_URL || ""].filter(Boolean);
+  const returnUrl = allowedReturnOrigins.some((origin) => returnUrlParam.startsWith(origin)) ? returnUrlParam : "";
 
   const [form, setForm] = useState<MarketForm>(formParam);
   const [payment, setPayment] = useState<MarketPaymentDetails | null>(null);
@@ -37,7 +40,7 @@ function PaymentsContent() {
       try {
         // 1. Try reading from sessionStorage
         const savedSession = sessionStorage.getItem("market_payment_data");
-        if (savedSession) {
+        if (savedSession && !(idParam && tokenParam)) {
           const parsed = JSON.parse(savedSession) as {
             form: MarketForm;
             payment: MarketPaymentDetails;
@@ -126,6 +129,9 @@ function PaymentsContent() {
     sessionStorage.removeItem("market-sellers-draft");
     setIsPaid(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+    if (returnUrl) {
+      window.setTimeout(() => window.location.assign(returnUrl), 1200);
+    }
   };
 
   return (
@@ -193,6 +199,7 @@ function PaymentsContent() {
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
+                {returnUrl && <Button asChild><a href={returnUrl}>Return to dashboard</a></Button>}
                 <Button asChild>
                   <Link href="/">Back to Marketplace</Link>
                 </Button>

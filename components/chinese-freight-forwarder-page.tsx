@@ -17,7 +17,6 @@ import { TopSellersListing } from "@/components/top-sellers-listing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import inquiryData from "@/data/inquiries.json";
 import type { BuyerMarket } from "@/lib/markets";
 import { serviceDisplayName, services, type SourcingService } from "@/lib/services";
 import { routePath } from "@/url";
@@ -147,7 +146,7 @@ export function ChineseFreightForwarderPage({
               </p>
             </div>
             <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">
-              {Math.min(12, inquiryData.length)} requests shown
+              Live requests
             </Badge>
           </div>
           <InquiryCarousel layout="grid" limit={12} />
