@@ -1,6 +1,13 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
+
+/* Do not auto-scan the project root. nano.<pid>.save backups land there and
+   Turbopack aborts the build if one is unreadable. */
+@source ".";
+@source "../components";
+@source "../lib";
+@source "../data";
 
 @custom-variant dark (&:is(.dark, .dark *));
 
