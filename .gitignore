@@ -21,6 +21,11 @@
 .DS_Store
 *.pem
 
+# nano emergency backups (nano.<pid>.save). Tailwind treats .save as a
+# source extension and registers these files as CSS dependencies. An
+# unreadable one (often root-owned, mode 600) crashes `next build`.
+*.save
+
 # debug
 npm-debug.log*
 yarn-debug.log*
