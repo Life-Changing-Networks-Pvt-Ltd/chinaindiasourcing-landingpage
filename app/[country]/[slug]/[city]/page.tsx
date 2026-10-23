@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LocationPage } from "@/components/location-page";
+import { ProductSourcingItemPage } from "@/components/product-sourcing-item-page";
 import { ServiceDetailPage } from "@/components/service-detail-page";
 import { cityRouteParams, getLocationCity, getLocationState } from "@/data";
 import { getBuyerMarket, unitedStatesMarket } from "@/lib/markets";
@@ -12,6 +13,13 @@ import {
   procurementPageTitle,
 } from "@/lib/procurement-locations";
 import { countryAlternates } from "@/lib/seo";
+import {
+  getProductItem,
+  getProductMarket,
+  getProductPage,
+  productAlternates,
+  productItemRouteParams,
+} from "@/lib/products";
 import {
   customClearancePageTitle,
   getService,
@@ -40,16 +48,31 @@ export function generateStaticParams() {
   // Other regional service combinations remain available through dynamic generation.
   // Pre-rendering every state × service pair would create tens of thousands of
   // pages and make routine production builds unnecessarily expensive.
-  return [...locationCityRouteParams, ...sourceLocationServiceRouteParams];
+  return [
+    ...locationCityRouteParams,
+    ...sourceLocationServiceRouteParams,
+    ...productItemRouteParams,
+  ];
 }
 
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
   const { country, slug: stateSlug, city: citySlug } = await params;
   const market = getBuyerMarket(country);
+  const productPage = getProductPage(country, stateSlug);
+  const product = productPage ? getProductItem(productPage, citySlug) : undefined;
+  const productMarket = getProductMarket(country);
   const state = getLocationState(country, stateSlug);
   const city = getLocationCity(country, stateSlug, citySlug);
   const service = getService(citySlug);
   const procurementLocation = getProcurementLocation(country, stateSlug);
+
+  if (productPage && product && productMarket) {
+    return {
+      title: `${product.name} | ${productPage.name} sourcing for ${productMarket.name}`,
+      description: product.description,
+      alternates: productAlternates(country, productPage.slug, product.slug),
+    };
+  }
 
   if (
     procurementLocation &&
@@ -101,10 +124,24 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
 export default async function CityPage({ params }: CityPageProps) {
   const { country, slug: stateSlug, city: citySlug } = await params;
   const market = getBuyerMarket(country);
+  const productPage = getProductPage(country, stateSlug);
+  const product = productPage ? getProductItem(productPage, citySlug) : undefined;
+  const productMarket = getProductMarket(country);
   const state = getLocationState(country, stateSlug);
   const city = getLocationCity(country, stateSlug, citySlug);
   const service = getService(citySlug);
   const procurementLocation = getProcurementLocation(country, stateSlug);
+
+  if (productPage && product && productMarket) {
+    return (
+      <ProductSourcingItemPage
+        market={productMarket}
+        page={productPage}
+        product={product}
+        country={country}
+      />
+    );
+  }
 
   if (
     procurementLocation &&

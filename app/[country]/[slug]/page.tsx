@@ -2,10 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LocationPage } from "@/components/location-page";
+import { ProductSourcingPage } from "@/components/product-sourcing-page";
 import { ServiceDetailPage } from "@/components/service-detail-page";
 import { getLocationState, stateRouteParams } from "@/data";
 import { buyerMarkets, getBuyerMarket } from "@/lib/markets";
 import { countryAlternates } from "@/lib/seo";
+import {
+  getProductMarket,
+  getProductPage,
+  productAlternates,
+  productPageRouteParams,
+} from "@/lib/products";
 import { getSpreadsheetServiceMetadata } from "@/lib/spreadsheet-metadata";
 import {
   customClearancePageTitle,
@@ -25,14 +32,25 @@ export function generateStaticParams() {
     services.map((service) => ({ country: market.slug, slug: service.slug })),
   );
 
-  return [...serviceRouteParams, ...stateRouteParams];
+  return [...serviceRouteParams, ...stateRouteParams, ...productPageRouteParams];
 }
 
 export async function generateMetadata({ params }: CountryServicePageProps): Promise<Metadata> {
   const { country, slug } = await params;
   const market = getBuyerMarket(country);
+  const productPage = getProductPage(country, slug);
+  const productMarket = getProductMarket(country);
   const service = getService(slug);
   const state = getLocationState(country, slug);
+
+  if (productPage && productMarket) {
+    return {
+      title: productPage.seoTitle,
+      description: productPage.seoDescription,
+      keywords: productPage.keywords || undefined,
+      alternates: productAlternates(country, productPage.slug),
+    };
+  }
 
   if (!market || (!service && !state)) return { title: "Page not found | Chinaindiasourcing" };
 
@@ -71,8 +89,14 @@ export async function generateMetadata({ params }: CountryServicePageProps): Pro
 export default async function CountryServicePage({ params }: CountryServicePageProps) {
   const { country, slug } = await params;
   const market = getBuyerMarket(country);
+  const productPage = getProductPage(country, slug);
+  const productMarket = getProductMarket(country);
   const service = getService(slug);
   const state = getLocationState(country, slug);
+
+  if (productPage && productMarket) {
+    return <ProductSourcingPage market={productMarket} page={productPage} country={country} />;
+  }
 
   if (!market || (!service && !state)) notFound();
 

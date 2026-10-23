@@ -5,18 +5,29 @@ import { services } from "@/lib/services";
 
 export const siteOrigin = "https://market.sellerslogin.com";
 
+function canonicalProductMarket(marketSlug: string) {
+  return marketSlug.toLowerCase() === "in" ? "india" : marketSlug.toLowerCase();
+}
+
 export const routePath = {
   home: "/",
   buyers: "/buyers",
   sellers: "/sellers",
   payments: "/payments",
   services: "/services",
+  products: "/us/products",
   terms: "/terms",
   market: (marketSlug: string) => `/${marketSlug}`,
   section: (section: "top" | "how" | "categories" | "support" | "services") =>
     `/#${section}`,
   marketService: (marketSlug: string, serviceSlug: string) =>
     `/${marketSlug}/${serviceSlug}`,
+  productDirectory: (marketSlug: string) =>
+    `/${canonicalProductMarket(marketSlug)}/products`,
+  product: (marketSlug: string, productSlug: string) =>
+    `/${canonicalProductMarket(marketSlug)}/${productSlug}`,
+  productItem: (marketSlug: string, productSlug: string, itemSlug: string) =>
+    `/${canonicalProductMarket(marketSlug)}/${productSlug}/${itemSlug}`,
   state: (marketSlug: string, stateSlug: string) =>
     `/${marketSlug}/${stateSlug}`,
   city: (marketSlug: string, stateSlug: string, citySlug: string) =>
@@ -72,8 +83,7 @@ export const regionalServiceRouteParams = locationData.flatMap((market) =>
 );
 
 export const regionalServicePaths = regionalServiceRouteParams.map(
-  ({ country, slug, city }) =>
-    routePath.regionalService(country, slug, city),
+  ({ country, slug, city }) => routePath.regionalService(country, slug, city),
 );
 
 export const sourceLocationServicePaths = procurementLocationRouteParams.map(
