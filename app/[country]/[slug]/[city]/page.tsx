@@ -4,7 +4,13 @@ import { notFound } from "next/navigation";
 import { LocationPage } from "@/components/location-page";
 import { ServiceDetailPage } from "@/components/service-detail-page";
 import { cityRouteParams, getLocationCity, getLocationState } from "@/data";
-import { getBuyerMarket } from "@/lib/markets";
+import { getBuyerMarket, unitedStatesMarket } from "@/lib/markets";
+import {
+  getProcurementLocation,
+  isLocationProcurementService,
+  procurementLocationRouteParams,
+  procurementPageTitle,
+} from "@/lib/procurement-locations";
 import { countryAlternates } from "@/lib/seo";
 import {
   customClearancePageTitle,
@@ -23,10 +29,18 @@ export function generateStaticParams() {
     ({ country, state, city }) => ({ country, slug: state, city }),
   );
 
-  // Regional service combinations remain available through dynamic generation.
+  const sourceLocationServiceRouteParams = procurementLocationRouteParams.map(
+    ({ country, location, service }) => ({
+      country,
+      slug: location,
+      city: service,
+    }),
+  );
+
+  // Other regional service combinations remain available through dynamic generation.
   // Pre-rendering every state × service pair would create tens of thousands of
   // pages and make routine production builds unnecessarily expensive.
-  return locationCityRouteParams;
+  return [...locationCityRouteParams, ...sourceLocationServiceRouteParams];
 }
 
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
@@ -35,6 +49,25 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
   const state = getLocationState(country, stateSlug);
   const city = getLocationCity(country, stateSlug, citySlug);
   const service = getService(citySlug);
+  const procurementLocation = getProcurementLocation(country, stateSlug);
+
+  if (
+    procurementLocation &&
+    service &&
+    isLocationProcurementService(country, service.slug)
+  ) {
+    return {
+      title: procurementPageTitle(country, procurementLocation.name),
+      description: `Find independent ${service.name} providers serving ${procurementLocation.name}, ${service.origin}, for United States buyers. Compare supplier research, quotations, negotiation, quality, and shipping coordination support.`,
+      alternates: {
+        canonical: routePath.sourceLocationService(
+          country,
+          procurementLocation.slug,
+          service.slug,
+        ),
+      },
+    };
+  }
 
   if (!market || !state || (!city && !service)) return { title: "Page not found | Chinaindiasourcing" };
 
@@ -71,6 +104,21 @@ export default async function CityPage({ params }: CityPageProps) {
   const state = getLocationState(country, stateSlug);
   const city = getLocationCity(country, stateSlug, citySlug);
   const service = getService(citySlug);
+  const procurementLocation = getProcurementLocation(country, stateSlug);
+
+  if (
+    procurementLocation &&
+    service &&
+    isLocationProcurementService(country, service.slug)
+  ) {
+    return (
+      <ServiceDetailPage
+        market={unitedStatesMarket}
+        service={service}
+        sourceRegionName={procurementLocation.name}
+      />
+    );
+  }
 
   if (!market || !state || (!city && !service)) notFound();
 

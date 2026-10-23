@@ -1,5 +1,6 @@
 import { locationData } from "@/data";
 import { buyerMarkets } from "@/lib/markets";
+import { procurementLocationRouteParams } from "@/lib/procurement-locations";
 import { services } from "@/lib/services";
 
 export const siteOrigin = "https://market.sellerslogin.com";
@@ -25,6 +26,11 @@ export const routePath = {
     stateSlug: string,
     serviceSlug: string,
   ) => `/${marketSlug}/${stateSlug}/${serviceSlug}`,
+  sourceLocationService: (
+    countrySlug: string,
+    locationSlug: string,
+    serviceSlug: string,
+  ) => `/${countrySlug}/${locationSlug}/${serviceSlug}`,
 } as const;
 
 export const sectionPaths = [
@@ -70,6 +76,11 @@ export const regionalServicePaths = regionalServiceRouteParams.map(
     routePath.regionalService(country, slug, city),
 );
 
+export const sourceLocationServicePaths = procurementLocationRouteParams.map(
+  ({ country, location, service }) =>
+    routePath.sourceLocationService(country, location, service),
+);
+
 const canonicalWebsitePaths = Array.from(
   new Set([
     routePath.home,
@@ -82,6 +93,7 @@ const canonicalWebsitePaths = Array.from(
     ...statePaths,
     ...cityPaths,
     ...regionalServicePaths,
+    ...sourceLocationServicePaths,
   ]),
 );
 

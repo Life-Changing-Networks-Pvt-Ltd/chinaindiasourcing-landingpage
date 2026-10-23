@@ -30,6 +30,7 @@ type ServiceDetailPageProps = {
   market: BuyerMarket;
   service: SourcingService;
   regionName?: string;
+  sourceRegionName?: string;
 };
 
 type ContentProfile = {
@@ -103,8 +104,12 @@ function getServiceKind(name: string) {
   return "sourcing";
 }
 
-function buildContent(service: SourcingService, market: BuyerMarket): ContentProfile {
-  const origin = service.origin;
+function buildContent(
+  service: SourcingService,
+  market: BuyerMarket,
+  sourceLocationName: string = service.origin,
+): ContentProfile {
+  const origin = sourceLocationName;
   const destination = market.locationName;
   const kind = getServiceKind(service.name);
 
@@ -291,27 +296,37 @@ function buildContent(service: SourcingService, market: BuyerMarket): ContentPro
   };
 }
 
-export function ServiceDetailPage({ market, service, regionName }: ServiceDetailPageProps) {
+export function ServiceDetailPage({
+  market,
+  service,
+  regionName,
+  sourceRegionName,
+}: ServiceDetailPageProps) {
   const displayMarket = regionName
     ? { ...market, name: regionName, locationName: `${regionName}, ${market.locationName}` }
     : market;
   const sourceCountry = getSourceCountry(service.origin);
+  const sourceLocationName = sourceRegionName
+    ? `${sourceRegionName}, ${service.origin}`
+    : service.origin;
   const sourceFlag = countryFlagAsset(sourceCountry.name);
   const destinationFlag = countryFlagAsset(market.name);
   const overview = localizeServiceText(service.overview, displayMarket);
-  const content = buildContent(service, displayMarket);
+  const content = buildContent(service, displayMarket, sourceLocationName);
   const displayServiceName = serviceDisplayName(service.name);
   const relatedServices = services.filter((item) => item.origin === service.origin && item.slug !== service.slug).slice(0, 6);
-  const pageTitle = regionName
-    ? `${displayServiceName} for Buyers in ${regionName}`
-    : `${displayServiceName} for ${displayMarket.name} Buyers`;
+  const pageTitle = sourceRegionName
+    ? `${sourceRegionName} ${displayServiceName} for ${displayMarket.name} Buyers`
+    : regionName
+      ? `${displayServiceName} for Buyers in ${regionName}`
+      : `${displayServiceName} for ${displayMarket.name} Buyers`;
   const faqs = [
     {
       question: `What does ${displayServiceName} include?`,
       answer: `${displayServiceName} can cover the relevant stages shown on this page, from requirement clarification and partner comparison to documentation, quality, and delivery coordination. The final scope depends on your product, order size, origin, destination, and selected partner.`,
     },
     {
-      question: `How are suppliers or service partners in ${service.origin} assessed?`,
+      question: `How are suppliers or service partners in ${sourceLocationName} assessed?`,
       answer: "Assessment can review identity, product relevance, capability, quotation detail, communication, sample performance, available documents, and on-site evidence where appropriate. The checks should be agreed before an order is placed.",
     },
     {
@@ -319,7 +334,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
       answer: "Yes. ChinaIndiaSourcing can introduce independent providers whose scope may include sample coordination, MOQ discussions, customization, packaging, target cost, and payment terms. Confirm the exact deliverables with the provider you select.",
     },
     {
-      question: `How long does sourcing from ${service.origin} take?`,
+      question: `How long does sourcing from ${sourceLocationName} take?`,
       answer: "Timing varies by product complexity, supplier availability, sample rounds, tooling, production lead time, inspection, and shipping method. A realistic schedule is created after the requirement and supplier options are reviewed.",
     },
     {
@@ -330,7 +345,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
   const guideSections = [
     {
       title: "Start with a complete requirement",
-      description: `Explain what you need from ${displayServiceName} and why the service is required for your order or project. Include the product or shipment type, specifications, quantity, current status, preferred schedule, and delivery location in ${displayMarket.locationName}. If you are still deciding, share the information you have and clearly mark estimates or unanswered questions. A useful first brief also describes the result you expect, such as a comparable supplier shortlist, a verified inspection report, a customs handoff, or a delivered shipment. This context helps independent providers in ${service.origin} judge whether their experience and service scope fit your request.`
+      description: `Explain what you need from ${displayServiceName} and why the service is required for your order or project. Include the product or shipment type, specifications, quantity, current status, preferred schedule, and delivery location in ${displayMarket.locationName}. If you are still deciding, share the information you have and clearly mark estimates or unanswered questions. A useful first brief also describes the result you expect, such as a comparable supplier shortlist, a verified inspection report, a customs handoff, or a delivered shipment. This context helps independent providers in ${sourceLocationName} judge whether their experience and service scope fit your request.`
     },
     {
       title: "Make the service scope specific",
@@ -393,7 +408,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Recent Buyers Leads for Sourcing</h2>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">Worldwide buyers who want to source from the {service.origin} market</p>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">Worldwide buyers who want to source from the {sourceLocationName} market</p>
             </div>
             <Badge variant="secondary" className="w-fit px-3 py-1.5 text-sm">Live requests</Badge>
           </div>
@@ -409,7 +424,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="gap-2">
               {sourceFlag ? <Image src={sourceFlag} alt={`${sourceCountry.name} flag`} width={24} height={16} unoptimized className="h-4 w-6 rounded-[2px] border border-black/10 object-cover" /> : null}
-              Sourcing in {sourceCountry.name}
+              Sourcing in {sourceLocationName}
             </Badge>
             <ArrowRight className="size-4 text-muted-foreground" aria-hidden="true" />
             <Badge variant="outline" className="gap-2 bg-background/70">
@@ -418,7 +433,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
             </Badge>
           </div>
           <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">What to check before choosing {displayServiceName}</h2>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">Use this practical guide to prepare for {displayServiceName}, compare independent providers in {service.origin}, and coordinate the work for buyers in {displayMarket.locationName}.</p>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">Use this practical guide to prepare for {displayServiceName}, compare independent providers in {sourceLocationName}, and coordinate the work for buyers in {displayMarket.locationName}.</p>
           <ol className="mt-10 divide-y divide-blue-100 border-y border-blue-100 dark:divide-blue-950 dark:border-blue-950">
             {guideSections.map((item, index) => (
               <li key={item.title} className="grid gap-4 py-7 sm:grid-cols-[3rem_1fr]">
@@ -507,7 +522,7 @@ export function ServiceDetailPage({ market, service, regionName }: ServiceDetail
             <Badge variant="secondary">Start with your requirement</Badge>
             <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Find providers offering {displayServiceName} in {service.origin}</h2>
+                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Find providers offering {displayServiceName} in {sourceLocationName}</h2>
                 <p className="mt-2 max-w-2xl text-muted-foreground">Share your product or service needs, order details, target budget, and delivery destination in {displayMarket.locationName}.</p>
               </div>
               <Button size="lg" asChild><Link href={routePath.buyers}><Search aria-hidden="true" /> Post a requirement</Link></Button>
