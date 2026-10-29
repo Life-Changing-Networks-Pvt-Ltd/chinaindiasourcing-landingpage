@@ -34,6 +34,8 @@ type OtpVerificationButtonProps = {
   marketForm?: MarketForm;
   marketApplicationId?: string;
   onMarketApplicationCreated?: (applicationId: string) => void;
+  relatedEmail?: string;
+  relatedWhatsapp?: string;
 };
 
 const isValidTarget = (channel: OtpChannel, target: string) => {
@@ -61,6 +63,8 @@ export function OtpVerificationButton({
   marketForm,
   marketApplicationId,
   onMarketApplicationCreated,
+  relatedEmail,
+  relatedWhatsapp,
 }: OtpVerificationButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -141,6 +145,10 @@ export function OtpVerificationButton({
         target,
         marketForm,
         applicationIdOverride || resolvedApplicationId || marketApplicationId,
+        {
+          email: relatedEmail?.trim().toLowerCase(),
+          whatsappNumber: relatedWhatsapp?.trim(),
+        },
       );
       if (result.marketApplicationId) {
         setResolvedApplicationId(result.marketApplicationId);

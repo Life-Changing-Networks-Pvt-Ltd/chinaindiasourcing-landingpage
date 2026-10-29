@@ -50,11 +50,24 @@ export async function sendVerificationOtp(
   target: string,
   marketForm?: MarketForm,
   marketApplicationId?: string,
+  related?: { email?: string; whatsappNumber?: string },
 ) {
   const path = channel === "email" ? "email" : "whatsapp";
   const body = channel === "email"
-    ? { email: target, verificationContext: "market", marketForm, marketApplicationId }
-    : { whatsappNumber: target, verificationContext: "market", marketForm, marketApplicationId };
+    ? {
+        email: target,
+        whatsappNumber: related?.whatsappNumber || "",
+        verificationContext: "market",
+        marketForm,
+        marketApplicationId,
+      }
+    : {
+        whatsappNumber: target,
+        email: related?.email || "",
+        verificationContext: "market",
+        marketForm,
+        marketApplicationId,
+      };
   const response = await fetch(`${apiBaseUrl}/live-chat/${path}/send-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

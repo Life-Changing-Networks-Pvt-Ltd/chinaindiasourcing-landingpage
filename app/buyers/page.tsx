@@ -1149,6 +1149,7 @@ export default function BuyersPage() {
                             marketForm="buyers"
                             marketApplicationId={marketApplicationId}
                             onMarketApplicationCreated={setMarketApplicationId}
+                            relatedWhatsapp={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
                             target={email.trim().toLowerCase()}
                             verified={emailVerified}
                             onVerified={(token) => {
@@ -1265,6 +1266,8 @@ export default function BuyersPage() {
                               channel="whatsapp"
                               marketForm="buyers"
                               marketApplicationId={marketApplicationId}
+                              onMarketApplicationCreated={setMarketApplicationId}
+                              relatedEmail={email.trim().toLowerCase()}
                               target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
                               verified={whatsappVerified}
                               onVerified={(token) => {

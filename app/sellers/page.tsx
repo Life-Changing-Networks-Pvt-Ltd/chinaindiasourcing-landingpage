@@ -1945,6 +1945,7 @@ export default function SellersPage() {
                               marketForm="sellers"
                               marketApplicationId={marketApplicationId}
                               onMarketApplicationCreated={setMarketApplicationId}
+                              relatedWhatsapp={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
                               target={email.trim().toLowerCase()}
                               verified={emailVerified}
                               onVerified={(token) => {
@@ -2021,6 +2022,8 @@ export default function SellersPage() {
                                 channel="whatsapp"
                                 marketForm="sellers"
                                 marketApplicationId={marketApplicationId}
+                                onMarketApplicationCreated={setMarketApplicationId}
+                                relatedEmail={email.trim().toLowerCase()}
                                 target={buildWhatsappNumber(countryCode, customCountryCode, whatsapp)}
                                 verified={whatsappVerified}
                                 onVerified={(token) => {
