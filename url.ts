@@ -3,7 +3,7 @@ import { buyerMarkets } from "@/lib/markets";
 import { procurementLocationRouteParams } from "@/lib/procurement-locations";
 import { services } from "@/lib/services";
 
-export const siteOrigin = "https://market.sellerslogin.com";
+export const siteOrigin = "https://www.chinaindiasourcing.com";
 
 function canonicalProductMarket(marketSlug: string) {
   return marketSlug.toLowerCase() === "in" ? "india" : marketSlug.toLowerCase();

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 
 import legacyProductData from "@/data/legacy-product-pages.json";
 import { getBuyerMarket, type BuyerMarket } from "@/lib/markets";
+import { siteOrigin } from "@/url";
 
-const productSiteOrigin = "https://market.sellerslogin.com";
+const productSiteOrigin = siteOrigin;
 
 export type ProductCard = {
   slug: string;
