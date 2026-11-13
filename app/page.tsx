@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { PlatformFeatures } from "@/components/platform-features";
+import { BuyerSourcingPopup } from "@/components/buyer-sourcing-popup";
 import { InquiryCarousel } from "@/components/inquiry-carousel";
 import { SiteFooter } from "@/components/site-footer";
 import { SourcePageIntro } from "@/components/source-page-intro";
@@ -141,6 +142,7 @@ const homeGuideSections = [
 export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <BuyerSourcingPopup />
       <SourcePageIntro showHomepageSections={false} />
 
       <TopSellersListing countryName="All" />

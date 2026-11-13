@@ -10,7 +10,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  DollarSign,
   FileText,
   Globe,
   Image as ImageIcon,
@@ -77,25 +76,6 @@ const orderVolumes = [
   "$ 30000 to $ 50000",
   "Above $ 50000",
   "Custom Volume / Budget",
-];
-
-const hourlyBudgets = [
-  "$ 5 to $ 15 / hour",
-  "$ 15 to $ 30 / hour",
-  "$ 30 to $ 50 / hour",
-  "$ 50 to $ 100 / hour",
-  "$ 100 to $ 200 / hour",
-  "Custom Hourly Rate",
-];
-
-const fixedBudgets = [
-  "$ 30 to $ 100",
-  "$ 100 to $ 300",
-  "$ 300 to $ 1000",
-  "$ 1000 to $ 3000",
-  "$ 3000 to $ 5000",
-  "$ 5000 to $ 10000",
-  "Custom Fixed Budget",
 ];
 
 const quantityUnits = [
@@ -715,11 +695,6 @@ export default function BuyersPage() {
   const [lookingFor, setLookingFor] = useState("");
   const [detailedRequirement, setDetailedRequirement] = useState("");
 
-  // Budget
-  const [budgetType, setBudgetType] = useState<"hourly" | "fixed">("hourly");
-  const [hourlyBudget, setHourlyBudget] = useState(hourlyBudgets[1]);
-  const [fixedBudget, setFixedBudget] = useState(fixedBudgets[2]);
-
   // Quantity
   const [quantity, setQuantity] = useState("");
   const [quantityUnit, setQuantityUnit] = useState(quantityUnits[0]);
@@ -731,8 +706,6 @@ export default function BuyersPage() {
   const [customOrderPlaceTime, setCustomOrderPlaceTime] = useState("");
   const [customOrderVolume, setCustomOrderVolume] = useState("");
   const [customQuantityUnit, setCustomQuantityUnit] = useState("");
-  const [customHourlyBudget, setCustomHourlyBudget] = useState("");
-  const [customFixedBudget, setCustomFixedBudget] = useState("");
 
   const requiresWhatsappVerification =
     countryCode === "+91" ||
@@ -789,13 +762,10 @@ export default function BuyersPage() {
           setSelectedSources(Array.isArray(data.selectedSources) ? data.selectedSources as string[] : []);
           setOrderVolume(text("orderVolume") || orderVolumes[2]); setLookingFor(text("lookingFor"));
           setDetailedRequirement(text("detailedRequirement"));
-          setBudgetType(data.budgetType === "fixed" ? "fixed" : "hourly");
-          setHourlyBudget(text("hourlyBudget") || hourlyBudgets[1]); setFixedBudget(text("fixedBudget") || fixedBudgets[2]);
           setQuantity(text("quantity")); setQuantityUnit(text("quantityUnit") || quantityUnits[0]);
           setCustomCountry(text("customCountry")); setCustomCountryCode(text("customCountryCode"));
           setCustomSourceOther(text("customSourceOther")); setCustomOrderPlaceTime(text("customOrderPlaceTime"));
           setCustomOrderVolume(text("customOrderVolume")); setCustomQuantityUnit(text("customQuantityUnit"));
-          setCustomHourlyBudget(text("customHourlyBudget")); setCustomFixedBudget(text("customFixedBudget"));
           setAgreedOffPlatform(Boolean(data.agreedOffPlatform)); setAgreedLeadSharing(Boolean(data.agreedLeadSharing));
           setAgreedPartnerAccess(Boolean(data.agreedPartnerAccess));
           setDraftMessage("Saved draft restored. Please verify your email and WhatsApp again before payment.");
@@ -859,9 +829,9 @@ export default function BuyersPage() {
     fullName, email, emailVerified, emailVerificationToken, marketApplicationId, countryCode, whatsapp,
     whatsappVerified, whatsappVerificationToken, companyName, website, streetAddress,
     landmark, city, state, country, pincode, orderPlaceTime, selectedSources, orderVolume,
-    lookingFor, detailedRequirement, budgetType, hourlyBudget, fixedBudget, quantity,
+    lookingFor, detailedRequirement, quantity,
     quantityUnit, customCountry, customCountryCode, customSourceOther, customOrderPlaceTime,
-    customOrderVolume, customQuantityUnit, customHourlyBudget, customFixedBudget,
+    customOrderVolume, customQuantityUnit,
     sampleImage: sampleImage
       ? { name: sampleImage.name, originalSize: sampleImage.originalSize, compressedSize: sampleImage.compressedSize }
       : undefined,
@@ -1328,7 +1298,7 @@ export default function BuyersPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Card 2: Detailed Sourcing Brief & Budget */}
+                  {/* Card 2: Detailed Sourcing Brief */}
                   <Card className="border-border/60 bg-card/90 shadow-sm backdrop-blur-sm">
                     <CardHeader className="border-b border-border/40 pb-4">
                       <div className="flex items-center gap-3">
@@ -1336,7 +1306,7 @@ export default function BuyersPage() {
                           <FileText className="size-4" />
                         </span>
                         <div>
-                          <CardTitle className="text-lg">Detailed Sourcing Brief &amp; Budget</CardTitle>
+                          <CardTitle className="text-lg">Detailed Sourcing Brief</CardTitle>
                         </div>
                       </div>
                     </CardHeader>
@@ -1419,92 +1389,6 @@ export default function BuyersPage() {
                             Please provide at least {50 - detailedRequirement.length} more characters to ensure accurate matches.
                           </p>
                         )}
-                      </div>
-
-                      {/* Budget to hire sourcing agent (Hourly vs Fixed toggle) */}
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-2">
-                          Budget to Hire Sourcing Agent <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div
-                            onClick={() => setBudgetType("hourly")}
-                            className={`cursor-pointer rounded-lg border p-3.5 transition-all ${budgetType === "hourly"
-                                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                : "border-input bg-background hover:bg-muted/40"
-                              }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-foreground">Hourly Rate</span>
-                              <span className="text-xs text-foreground/75 font-medium">$ 5 / hr to $ 200 / hr</span>
-                            </div>
-                            {budgetType === "hourly" && (
-                              <div className="mt-3 space-y-2">
-                                <select
-                                  aria-label="Hourly Budget Range"
-                                  value={hourlyBudget}
-                                  onChange={(e) => setHourlyBudget(e.target.value)}
-                                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                                >
-                                  {hourlyBudgets.map((h) => (
-                                    <option key={h} value={h}>
-                                      {h}
-                                    </option>
-                                  ))}
-                                </select>
-                                {hourlyBudget === "Custom Hourly Rate" && (
-                                  <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. $ 250 / hr or Negotiable based on project"
-                                    value={customHourlyBudget}
-                                    onChange={(e) => setCustomHourlyBudget(capitalizeFirst(e.target.value))}
-                                    className="w-full rounded-md border border-primary/40 bg-background px-2.5 py-1 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                                  />
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          <div
-                            onClick={() => setBudgetType("fixed")}
-                            className={`cursor-pointer rounded-lg border p-3.5 transition-all ${budgetType === "fixed"
-                                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                : "border-input bg-background hover:bg-muted/40"
-                              }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-foreground">Fixed Project Fee</span>
-                              <span className="text-xs text-foreground/75 font-medium">$ 30 to $ 10,000</span>
-                            </div>
-                            {budgetType === "fixed" && (
-                              <div className="mt-3 space-y-2">
-                                <select
-                                  aria-label="Fixed Project Budget Range"
-                                  value={fixedBudget}
-                                  onChange={(e) => setFixedBudget(e.target.value)}
-                                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                                >
-                                  {fixedBudgets.map((f) => (
-                                    <option key={f} value={f}>
-                                      {f}
-                                    </option>
-                                  ))}
-                                </select>
-                                {fixedBudget === "Custom Fixed Budget" && (
-                                  <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. $ 15,000 Milestone based / Escrow protected"
-                                    value={customFixedBudget}
-                                    onChange={(e) => setCustomFixedBudget(capitalizeFirst(e.target.value))}
-                                    className="w-full rounded-md border border-primary/40 bg-background px-2.5 py-1 text-xs text-foreground shadow-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                                  />
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
                       </div>
 
                       {/* Product/Service Sample image (Upload option & auto compress under 150 kb) */}
