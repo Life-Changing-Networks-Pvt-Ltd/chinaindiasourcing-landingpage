@@ -61,7 +61,7 @@ export function SiteFooter({
               We facilitate introductions and platform coordination. Listed partners are independent businesses responsible for their own quotations, contracts, products, and services.
             </p>
             <p className="mt-3 text-xs leading-5 text-slate-400">
-              Chinaindiasourcing is operated by <span className="text-slate-200 font-medium">Life Changing Networks Pvt. Ltd.</span>, an authorised partner of <a href="https://www.sellerslogin.com" target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:underline">SellersLogin.com</a>.
+              Chinaindiasourcing is an authorised partner of <a href="https://www.sellerslogin.com" target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:underline">SellersLogin.com</a>.
             </p>
             <div className="mt-5 space-y-3 text-sm text-slate-300">
               <div className="flex items-center gap-3"><MapPinned className="size-4 text-cyan-300" aria-hidden="true" /><span>Serving buyers across {marketName}</span></div>
