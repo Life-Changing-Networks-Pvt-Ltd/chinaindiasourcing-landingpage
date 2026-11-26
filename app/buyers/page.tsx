@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useId, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { marketPaymentUrl } from "@/lib/payment-url";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -657,7 +657,6 @@ function StateSelect({
 }
 
 export default function BuyersPage() {
-  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Form State
@@ -931,13 +930,7 @@ export default function BuyersPage() {
         ...draftCredentials.current,
       });
       if (!result.data) throw new Error("Payment details were not returned.");
-      sessionStorage.setItem(
-        "market_payment_data",
-        JSON.stringify({ form: "buyers", payment: result.data }),
-      );
-      router.push(
-        `/payments?form=buyers&id=${result.data.applicationId}&token=${encodeURIComponent(result.data.accessToken)}`,
-      );
+      window.location.assign(marketPaymentUrl("buyers", result.data));
     } catch (error) {
       const requestError = error as Error & {
         code?: string;

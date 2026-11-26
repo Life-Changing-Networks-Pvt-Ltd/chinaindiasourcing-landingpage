@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useId, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { marketPaymentUrl } from "@/lib/payment-url";
 import {
   ArrowLeft,
   ArrowRight,
@@ -575,7 +575,6 @@ interface CertificateItem {
 }
 
 export default function SellersPage() {
-  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Opening Question State (Role & Sourcing Specialization)
@@ -1143,13 +1142,7 @@ export default function SellersPage() {
         ...draftCredentials.current,
       });
       if (!result.data) throw new Error("Payment details were not returned.");
-      sessionStorage.setItem(
-        "market_payment_data",
-        JSON.stringify({ form: "sellers", payment: result.data }),
-      );
-      router.push(
-        `/payments?form=sellers&id=${result.data.applicationId}&token=${encodeURIComponent(result.data.accessToken)}`,
-      );
+      window.location.assign(marketPaymentUrl("sellers", result.data));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to submit the form. Please try again.";
       const requestError = error as Error & {

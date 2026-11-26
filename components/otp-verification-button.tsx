@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { marketPaymentUrl } from "@/lib/payment-url";
 import { ArrowRight, Check, CreditCard, Loader2, Mail, MessageCircle, RotateCcw, ShieldCheck } from "lucide-react";
 
 import {
@@ -66,7 +66,6 @@ export function OtpVerificationButton({
   relatedEmail,
   relatedWhatsapp,
 }: OtpVerificationButtonProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -230,13 +229,7 @@ export function OtpVerificationButton({
 
   const continueToPayment = () => {
     if (!pendingPayment || !marketForm) return;
-    window.sessionStorage.setItem(
-      "market_payment_data",
-      JSON.stringify({ form: marketForm, payment: pendingPayment }),
-    );
-    router.push(
-      `/payments?form=${marketForm}&id=${pendingPayment.applicationId}&token=${encodeURIComponent(pendingPayment.accessToken)}`,
-    );
+    window.location.assign(marketPaymentUrl(marketForm, pendingPayment));
   };
 
   const fillAgain = () => {
